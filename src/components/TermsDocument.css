@@ -1,0 +1,40 @@
+.terms-document-container {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1.414; /* A4 aspect ratio (width:height = 1:1.414) */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.pdf-viewer {
+  flex: 1 !important;
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 0 !important;
+}
+
+/* Fix for iframe inside PDFViewer */
+.pdf-viewer iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+}
+
+/* Ensure the Document and Page components take full height */
+.react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.react-pdf__Page {
+  flex: 1;
+}

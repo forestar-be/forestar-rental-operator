@@ -1,0 +1,12 @@
+#machineRentedTable {
+  height: 100%;
+  position: relative
+}
+
+.ag-row-last {
+  border-bottom: unset!important;
+}
+
+.dialog-paper {
+  min-width: 40%;
+}
