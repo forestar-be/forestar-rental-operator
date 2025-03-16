@@ -73,7 +73,7 @@ const PhotoCaptureStep = ({
       <input
         type="file"
         accept="image/*"
-        capture
+        capture="environment"
         ref={frontPhotoInputRef}
         onChange={(e) => handleFileChange('front', e)}
         style={{ display: 'none' }}
@@ -81,7 +81,7 @@ const PhotoCaptureStep = ({
       <input
         type="file"
         accept="image/*"
-        capture
+        capture="environment"
         ref={backPhotoInputRef}
         onChange={(e) => handleFileChange('back', e)}
         style={{ display: 'none' }}
