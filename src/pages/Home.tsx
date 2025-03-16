@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/AuthProvider';
-import { useAppDispatch } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchMachineRental } from '../store/slices/machineRentalSlice';
 import { MachineRentalWithMachineRented } from '../utils/types';
 import {
@@ -36,6 +36,10 @@ import 'dayjs/locale/fr';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { alpha } from '@mui/material/styles';
+import {
+  getMachineRentalList,
+  getMachineRentalLoading,
+} from '../store/selectors/machineRentalSelectors';
 
 // Extend Day.js with plugins
 dayjs.extend(relativeTime);
@@ -48,33 +52,13 @@ const Home = (): JSX.Element => {
   const auth = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
-  // const dispatch = useAppDispatch();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [rentals, setRentals] = useState<MachineRentalWithMachineRented[]>([]);
-
-  // useEffect(() => {
-  //   const fetchRentals = async () => {
-  //     setLoading(true);
-  //     try {
-  //       if (auth.token) {
-  //         const rentalData = await dispatch(
-  //           fetchMachineRental(auth.token),
-  //         ).unwrap();
-  //         setRentals(rentalData);
-  //       }
-  //     } catch (error) {
-  //       console.error('Failed to fetch rentals:', error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchRentals();
-  // }, [auth.token]);
+  const loading = useAppSelector(getMachineRentalLoading);
+  const rentals: MachineRentalWithMachineRented[] =
+    useAppSelector(getMachineRentalList);
 
   const filteredRentals = rentals.filter((rental) => {
     const searchLower = searchTerm.toLowerCase();
