@@ -9,17 +9,7 @@ import {
   MachineRentedWithImage,
 } from './types';
 
-// Declare the window._env_ type
-declare global {
-  interface Window {
-    _env_?: {
-      REACT_APP_API_URL?: string;
-    };
-  }
-}
-
-// Use window._env_ or fallback to a default API URL
-const API_URL = window._env_?.REACT_APP_API_URL || 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL;
 
 const apiRequest = async (
   endpoint: string,
