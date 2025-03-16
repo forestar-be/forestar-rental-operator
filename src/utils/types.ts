@@ -19,6 +19,7 @@ export interface MachineRental {
 
 export interface MachineRentalWithMachineRented extends MachineRental {
   machineRented: MachineRentedWithoutRental;
+  totalPrice?: number;
 }
 
 export type MachineRentalToCreate = Omit<

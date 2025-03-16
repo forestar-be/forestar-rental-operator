@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   Box,
   Typography,
   Button,
   CircularProgress,
   Alert,
+  useTheme,
+  useMediaQuery,
+  Divider,
 } from '@mui/material';
-import { PDFViewer } from '@react-pdf/renderer';
+import PDFtoIMG from './PDFtoIMG';
+import { pdf } from '@react-pdf/renderer';
 import TermsDocument from './TermsDocument';
-import ArticleIcon from '@mui/icons-material/Article';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { MachineRentalWithMachineRented } from '../utils/types';
 
@@ -20,6 +23,7 @@ interface TermsGenerationStepProps {
   signatureDataUrl: string | null;
   onPrevStep: () => void;
   onNextStep: () => void;
+  signatureLocation: string | null;
 }
 
 const TermsGenerationStep = ({
@@ -28,9 +32,43 @@ const TermsGenerationStep = ({
   frontPhotoDataUrl,
   backPhotoDataUrl,
   signatureDataUrl,
+  signatureLocation,
   onPrevStep,
   onNextStep,
 }: TermsGenerationStepProps): JSX.Element => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const generatePdf = async () => {
+      if (rental && frontPhotoDataUrl && backPhotoDataUrl) {
+        try {
+          const doc = (
+            <TermsDocument
+              rental={rental}
+              machine={rental?.machineRented || null}
+              frontIdCardImage={frontPhotoDataUrl || undefined}
+              backIdCardImage={backPhotoDataUrl || undefined}
+              signatureDataUrl={signatureDataUrl || undefined}
+              signatureLocation={signatureLocation || undefined}
+            />
+          );
+
+          const pdfDoc = await pdf(doc).toBlob();
+          setPdfBlob(pdfDoc);
+          setError(null);
+        } catch (err) {
+          console.error('Error generating PDF:', err);
+          setError('Failed to generate PDF document: ' + String(err));
+        }
+      }
+    };
+
+    generatePdf();
+  }, [rental, frontPhotoDataUrl, backPhotoDataUrl, signatureDataUrl]);
+
   return (
     <Box sx={{ mt: 2 }}>
       <Typography variant="h6" gutterBottom>
@@ -45,6 +83,11 @@ const TermsGenerationStep = ({
           <Alert severity="info" sx={{ mb: 2 }}>
             Veuillez vérifier le document avant de continuer
           </Alert>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           <>
             <Box
               sx={{
@@ -55,19 +98,101 @@ const TermsGenerationStep = ({
               className="terms-document-wrapper"
             >
               <div className="terms-document-container">
-                <PDFViewer className="pdf-viewer">
-                  <TermsDocument
-                    rental={rental}
-                    machine={rental?.machineRented || null}
-                    frontIdCardImage={frontPhotoDataUrl || undefined}
-                    backIdCardImage={backPhotoDataUrl || undefined}
-                    signatureDataUrl={signatureDataUrl || undefined}
-                  />
-                </PDFViewer>
+                {pdfBlob ? (
+                  <PDFtoIMG file={pdfBlob}>
+                    {({
+                      pages,
+                      loading,
+                    }: {
+                      pages: string[];
+                      loading: boolean;
+                    }) => {
+                      if (loading)
+                        return (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'center',
+                              width: '100%',
+                              my: 2,
+                            }}
+                          >
+                            <CircularProgress />
+                          </Box>
+                        );
+
+                      if (!pages.length) {
+                        console.error('No pages rendered from PDF');
+                        return (
+                          <Alert severity="error">
+                            Le document PDF n'a pas pu être rendu correctement.
+                            Veuillez réessayer ou contacter le support
+                            technique.
+                          </Alert>
+                        );
+                      }
+
+                      return pages.map((page: string, index: number) => {
+                        if (!page || page === 'data:,') {
+                          console.error(`Empty page at index ${index}`);
+                          return (
+                            <Alert
+                              key={index}
+                              severity="warning"
+                              sx={{ mb: 2 }}
+                            >
+                              La page {index + 1} n'a pas pu être rendue
+                            </Alert>
+                          );
+                        }
+
+                        return (
+                          <React.Fragment key={index}>
+                            <img
+                              src={page}
+                              alt={`Page ${index + 1}`}
+                              style={{ width: '100%', marginBottom: '10px' }}
+                              onError={(e) => {
+                                console.error(
+                                  `Error loading image for page ${index + 1}`,
+                                  e,
+                                );
+                                (e.target as HTMLImageElement).style.display =
+                                  'none';
+                              }}
+                            />
+                            {index < pages.length - 1 && (
+                              <Divider sx={{ my: 2 }} />
+                            )}
+                          </React.Fragment>
+                        );
+                      });
+                    }}
+                  </PDFtoIMG>
+                ) : (
+                  <CircularProgress />
+                )}
               </div>
             </Box>
-            <Box mt={3} mb={3} display="flex" justifyContent="space-between">
-              <Button onClick={onPrevStep} variant="outlined">
+            <Box
+              mt={3}
+              mb={3}
+              sx={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                justifyContent: isMobile ? 'center' : 'space-between',
+                gap: 2,
+                width: '100%',
+              }}
+            >
+              <Button
+                onClick={onPrevStep}
+                variant="outlined"
+                sx={{
+                  height: isMobile ? '48px' : 'auto',
+                  width: isMobile ? '100%' : 'auto',
+                }}
+              >
                 Retour
               </Button>
               <Button
@@ -75,6 +200,11 @@ const TermsGenerationStep = ({
                 color="primary"
                 onClick={onNextStep}
                 endIcon={<NavigateNextIcon />}
+                sx={{
+                  height: isMobile ? '48px' : 'auto',
+                  width: isMobile ? '100%' : 'auto',
+                }}
+                disabled={error !== null}
               >
                 Continuer vers la signature
               </Button>

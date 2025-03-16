@@ -26,6 +26,12 @@ import {
   CardActions,
   Grid,
   Chip,
+  Pagination,
+  FormControl,
+  Select,
+  MenuItem,
+  Stack,
+  SelectChangeEvent,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -56,6 +62,9 @@ const Home = (): JSX.Element => {
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const loading = useAppSelector(getMachineRentalLoading);
   const rentals: MachineRentalWithMachineRented[] =
     useAppSelector(getMachineRentalList);
@@ -71,9 +80,36 @@ const Home = (): JSX.Element => {
     );
   });
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredRentals.length / itemsPerPage);
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRentals = filteredRentals.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number,
+  ) => {
+    setPage(value);
+    // Scroll to top when changing page
+    window.scrollTo(0, 0);
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (event: SelectChangeEvent<number>) => {
+    setItemsPerPage(event.target.value as number);
+    setPage(1); // Reset to first page when changing items per page
+  };
+
   const handleRentalSelect = (rental: MachineRentalWithMachineRented) => {
     navigate(`/rental/${rental.id}`);
   };
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // Render rental card for mobile/tablet view
   const renderRentalCard = (rental: MachineRentalWithMachineRented) => {
@@ -131,13 +167,69 @@ const Home = (): JSX.Element => {
     );
   };
 
+  // Render pagination controls
+  const renderPaginationControls = () => {
+    return (
+      <Box
+        sx={{
+          mt: 3,
+          pb: 1.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={isMobile ? 1 : 2}
+          alignItems="center"
+          flexWrap="nowrap"
+          sx={{ display: { xs: 'none', sm: 'flex' } }}
+        >
+          <Typography variant="body2">Résultats par page:</Typography>
+          <FormControl size="small">
+            <Select
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+              displayEmpty
+              sx={{ minWidth: 80 }}
+            >
+              <MenuItem value={5}>5</MenuItem>
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          showFirstButton
+          showLastButton
+          size={isMobile ? 'small' : 'medium'}
+          sx={{ flexShrink: 0, flexWrap: 'nowrap' }}
+        />
+      </Box>
+    );
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
+      <Box sx={{ mb: isMobile ? 2 : 4 }}>
+        <Typography
+          variant={isMobile ? 'h5' : 'h4'}
+          component="h1"
+          gutterBottom
+        >
           Gestion des Locations
         </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
+        <Typography
+          variant={isMobile ? 'body2' : 'body1'}
+          color="text.secondary"
+          gutterBottom={!isMobile}
+        >
           Sélectionnez une location pour générer et faire signer les conditions
           générales.
         </Typography>
@@ -148,7 +240,8 @@ const Home = (): JSX.Element => {
           placeholder="Rechercher par client ou machine..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ mt: 2 }}
+          sx={{ mt: isMobile ? 1 : 2 }}
+          size={isMobile ? 'small' : 'medium'}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -167,9 +260,9 @@ const Home = (): JSX.Element => {
         <>
           {isMobile || isTablet ? (
             // Mobile and Tablet view - cards
-            <Grid container spacing={2}>
-              {filteredRentals.length > 0 ? (
-                filteredRentals.map((rental) => (
+            <Grid container spacing={1}>
+              {paginatedRentals.length > 0 ? (
+                paginatedRentals.map((rental) => (
                   <Grid item xs={12} sm={6} key={rental.id}>
                     {renderRentalCard(rental)}
                   </Grid>
@@ -198,8 +291,8 @@ const Home = (): JSX.Element => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredRentals.length > 0 ? (
-                    filteredRentals.map((rental) => (
+                  {paginatedRentals.length > 0 ? (
+                    paginatedRentals.map((rental) => (
                       <TableRow
                         key={rental.id}
                         sx={{
@@ -263,6 +356,9 @@ const Home = (): JSX.Element => {
               </Table>
             </TableContainer>
           )}
+
+          {/* Pagination controls */}
+          {filteredRentals.length > 0 && renderPaginationControls()}
         </>
       )}
     </Container>

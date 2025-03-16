@@ -41,6 +41,7 @@ const getTermsDocument = (
   frontPhotoDataUrl: string | null,
   backPhotoDataUrl: string | null,
   signatureDataUrl: string | null,
+  signatureLocation: string | null,
 ) => {
   return (
     <TermsDocument
@@ -49,6 +50,7 @@ const getTermsDocument = (
       frontIdCardImage={frontPhotoDataUrl!}
       backIdCardImage={backPhotoDataUrl!}
       signatureDataUrl={signatureDataUrl!}
+      signatureLocation={signatureLocation!}
     />
   );
 };
@@ -71,6 +73,9 @@ const RentalDetail = (): JSX.Element => {
   );
   const [backPhotoDataUrl, setBackPhotoDataUrl] = useState<string | null>(null);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [signatureLocation, setSignatureLocation] = useState<string | null>(
+    null,
+  );
 
   // Use the usePDF hook at component level
   const [pdfInstance, updatePdfInstance] = usePDF({
@@ -208,6 +213,7 @@ const RentalDetail = (): JSX.Element => {
           frontPhotoDataUrl!,
           backPhotoDataUrl!,
           signatureDataUrl!,
+          signatureLocation!,
         ),
       );
     } catch (error) {
@@ -219,8 +225,8 @@ const RentalDetail = (): JSX.Element => {
 
   useEffect(() => {
     const generatePdf = async () => {
-      try {
-        if (activeStep === 3 && !pdfInstance.loading) {
+      if (activeStep === 3 && !pdfInstance.loading) {
+        try {
           if (!pdfInstance.blob || pdfInstance.error) {
             toast.error('Impossible de générer le PDF');
             console.error('Error generating PDF:', pdfInstance.error);
@@ -241,12 +247,12 @@ const RentalDetail = (): JSX.Element => {
 
           toast.success('Signature enregistrée avec succès');
           handleNextStep();
+        } catch (error) {
+          console.error('Failed to save signature:', error);
+          toast.error("Erreur lors de l'enregistrement de la signature");
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Failed to save signature:', error);
-        toast.error("Erreur lors de l'enregistrement de la signature");
-      } finally {
-        setLoading(false);
       }
     };
     generatePdf();
@@ -339,6 +345,7 @@ const RentalDetail = (): JSX.Element => {
             frontPhotoDataUrl={frontPhotoDataUrl}
             backPhotoDataUrl={backPhotoDataUrl}
             signatureDataUrl={signatureDataUrl}
+            signatureLocation={signatureLocation}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
           />
@@ -352,6 +359,8 @@ const RentalDetail = (): JSX.Element => {
             onSaveSignature={handleSaveSignature}
             onSignatureSave={handleSignatureSave}
             onPrevStep={handlePrevStep}
+            setSignatureLocation={setSignatureLocation}
+            signatureLocation={signatureLocation}
           />
         );
       case 4:
@@ -374,13 +383,12 @@ const RentalDetail = (): JSX.Element => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="md" sx={{ mt: { xs: 2, sm: 4 }, pb: 8 }}>
       <RentalHeader
         rental={rental}
         activeStep={activeStep}
         onBack={handleBack}
       />
-
       {getStepContent()}
     </Container>
   );

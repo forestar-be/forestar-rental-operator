@@ -2,6 +2,7 @@ import React from 'react';
 import { Paper, Typography, Grid, Box, Button } from '@mui/material';
 import { MachineRentalWithMachineRented } from '../utils/types';
 import dayjs from 'dayjs';
+import { formatPriceNumberToFrenchFormatStr } from '../utils/common.utils';
 
 interface ClientInfoStepProps {
   rental: MachineRentalWithMachineRented;
@@ -14,10 +15,6 @@ const ClientInfoStep = ({
 }: ClientInfoStepProps): JSX.Element => {
   return (
     <Paper sx={{ p: 3, mt: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Informations client
-      </Typography>
-
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <Typography variant="subtitle2">Nom complet</Typography>
@@ -34,16 +31,15 @@ const ClientInfoStep = ({
           <Typography variant="body1" gutterBottom>
             {rental.clientEmail}
           </Typography>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
           <Typography variant="subtitle2">Adresse</Typography>
           <Typography variant="body1" gutterBottom>
             {rental.clientAddress}
             <br />
             {rental.clientPostal} {rental.clientCity}
           </Typography>
+        </Grid>
 
+        <Grid item xs={12} md={6}>
           <Typography variant="subtitle2">Machine louée</Typography>
           <Typography variant="body1" gutterBottom>
             {rental.machineRented.name}
@@ -54,6 +50,10 @@ const ClientInfoStep = ({
             {rental.rentalDate ? dayjs(rental.rentalDate).format('LL') : 'N/A'}
             {' → '}
             {rental.returnDate ? dayjs(rental.returnDate).format('LL') : 'N/A'}
+          </Typography>
+          <Typography variant="subtitle2">Prix total</Typography>
+          <Typography variant="body1" gutterBottom>
+            {rental.totalPrice ? formatPriceNumberToFrenchFormatStr(rental.totalPrice) : 'Non spécifié'}
           </Typography>
         </Grid>
       </Grid>
