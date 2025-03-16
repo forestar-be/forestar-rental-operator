@@ -208,7 +208,7 @@ const Home = (): JSX.Element => {
           color="primary"
           showFirstButton
           showLastButton
-          size={isMobile ? 'small' : 'medium'}
+          size={'medium'}
           sx={{ flexShrink: 0, flexWrap: 'nowrap' }}
         />
       </Box>

@@ -383,7 +383,7 @@ const RentalDetail = (): JSX.Element => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: { xs: 2, sm: 4 }, pb: 8 }}>
+    <Container maxWidth="md" sx={{ mt: { xs: 1, sm: 2 }, pb: 8 }}>
       <RentalHeader
         rental={rental}
         activeStep={activeStep}
