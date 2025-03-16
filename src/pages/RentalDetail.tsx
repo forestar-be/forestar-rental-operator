@@ -24,7 +24,6 @@ import PhotoCaptureStep from '../components/PhotoCaptureStep';
 import TermsGenerationStep from '../components/TermsGenerationStep';
 import SignatureStep from '../components/SignatureStep';
 import FinalizationStep from '../components/FinalizationStep';
-import PhotoCaptureDialog from '../components/PhotoCaptureDialog';
 import RentalHeader from '../components/RentalHeader';
 import TermsDocument from '../components/TermsDocument';
 window.Buffer = window.Buffer || require('buffer').Buffer;
@@ -71,10 +70,6 @@ const RentalDetail = (): JSX.Element => {
     null,
   );
   const [backPhotoDataUrl, setBackPhotoDataUrl] = useState<string | null>(null);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
-  const [currentPhotoType, setCurrentPhotoType] = useState<'front' | 'back'>(
-    'front',
-  );
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
 
   // Use the usePDF hook at component level
@@ -121,12 +116,7 @@ const RentalDetail = (): JSX.Element => {
     setActiveStep((prev) => prev - 1);
   };
 
-  const openPhotoDialog = (type: 'front' | 'back') => {
-    setCurrentPhotoType(type);
-    setPhotoDialogOpen(true);
-  };
-
-  const processImageFile = (file: File) => {
+  const processImageFile = (file: File, photoType: 'front' | 'back') => {
     // Convert WebP to JPEG if needed
     if (file.type === 'image/webp') {
       const canvas = document.createElement('canvas');
@@ -153,7 +143,7 @@ const RentalDetail = (): JSX.Element => {
               const reader = new FileReader();
               reader.onload = (e) => {
                 if (e.target && e.target.result) {
-                  if (currentPhotoType === 'front') {
+                  if (photoType === 'front') {
                     setFrontPhoto(jpegFile);
                     setFrontPhotoDataUrl(e.target.result as string);
                   } else {
@@ -176,7 +166,7 @@ const RentalDetail = (): JSX.Element => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target && e.target.result) {
-          if (currentPhotoType === 'front') {
+          if (photoType === 'front') {
             setFrontPhoto(file);
             setFrontPhotoDataUrl(e.target.result as string);
           } else {
@@ -228,8 +218,6 @@ const RentalDetail = (): JSX.Element => {
   };
 
   useEffect(() => {
-    console.log('pdfInstance', pdfInstance);
-    console.log('activeStep', activeStep);
     const generatePdf = async () => {
       try {
         if (activeStep === 3 && !pdfInstance.loading) {
@@ -336,7 +324,10 @@ const RentalDetail = (): JSX.Element => {
             backPhoto={backPhoto}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
-            onOpenPhotoDialog={openPhotoDialog}
+            onPhotoTaken={(type, file) => {
+              // Process the captured photo directly
+              processImageFile(file, type);
+            }}
             onGenerateTerms={handleGenerateTerms}
           />
         );
@@ -391,14 +382,6 @@ const RentalDetail = (): JSX.Element => {
       />
 
       {getStepContent()}
-
-      {/* Photo capture dialog */}
-      <PhotoCaptureDialog
-        open={photoDialogOpen}
-        photoType={currentPhotoType}
-        onClose={() => setPhotoDialogOpen(false)}
-        onPhotoTaken={processImageFile}
-      />
     </Container>
   );
 };

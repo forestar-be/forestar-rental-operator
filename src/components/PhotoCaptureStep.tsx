@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Paper,
   Typography,
@@ -20,7 +20,7 @@ interface PhotoCaptureStepProps {
   backPhoto: File | null;
   onPrevStep: () => void;
   onNextStep: () => void;
-  onOpenPhotoDialog: (type: 'front' | 'back') => void;
+  onPhotoTaken: (type: 'front' | 'back', file: File) => void;
   onGenerateTerms: () => void;
 }
 
@@ -32,9 +32,32 @@ const PhotoCaptureStep = ({
   backPhoto,
   onPrevStep,
   onNextStep,
-  onOpenPhotoDialog,
+  onPhotoTaken,
   onGenerateTerms,
 }: PhotoCaptureStepProps): JSX.Element => {
+  // Create refs for the hidden file inputs
+  const frontPhotoInputRef = useRef<HTMLInputElement>(null);
+  const backPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file selection
+  const handleFileChange = (
+    type: 'front' | 'back',
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (event.target.files && event.target.files[0]) {
+      onPhotoTaken(type, event.target.files[0]);
+    }
+  };
+
+  // Trigger the file input click
+  const triggerFileInput = (type: 'front' | 'back') => {
+    if (type === 'front' && frontPhotoInputRef.current) {
+      frontPhotoInputRef.current.click();
+    } else if (type === 'back' && backPhotoInputRef.current) {
+      backPhotoInputRef.current.click();
+    }
+  };
+
   return (
     <Paper sx={{ p: 3, mt: 3 }}>
       <Typography variant="h6" gutterBottom>
@@ -45,6 +68,24 @@ const PhotoCaptureStep = ({
         Prenez en photo le recto et le verso de la pièce d'identité du client
         pour générer les conditions générales.
       </Typography>
+
+      {/* Hidden file inputs */}
+      <input
+        type="file"
+        accept="image/*"
+        capture
+        ref={frontPhotoInputRef}
+        onChange={(e) => handleFileChange('front', e)}
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        accept="image/*"
+        capture
+        ref={backPhotoInputRef}
+        onChange={(e) => handleFileChange('back', e)}
+        style={{ display: 'none' }}
+      />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
@@ -74,7 +115,7 @@ const PhotoCaptureStep = ({
                   <Button
                     variant="outlined"
                     startIcon={<PhotoCameraIcon />}
-                    onClick={() => onOpenPhotoDialog('front')}
+                    onClick={() => triggerFileInput('front')}
                   >
                     Prendre photo
                   </Button>
@@ -83,7 +124,7 @@ const PhotoCaptureStep = ({
               {frontPhotoDataUrl && (
                 <Button
                   variant="text"
-                  onClick={() => onOpenPhotoDialog('front')}
+                  onClick={() => triggerFileInput('front')}
                   sx={{ mt: 1 }}
                 >
                   Reprendre la photo
@@ -120,7 +161,7 @@ const PhotoCaptureStep = ({
                   <Button
                     variant="outlined"
                     startIcon={<PhotoCameraIcon />}
-                    onClick={() => onOpenPhotoDialog('back')}
+                    onClick={() => triggerFileInput('back')}
                   >
                     Prendre photo
                   </Button>
@@ -129,7 +170,7 @@ const PhotoCaptureStep = ({
               {backPhotoDataUrl && (
                 <Button
                   variant="text"
-                  onClick={() => onOpenPhotoDialog('back')}
+                  onClick={() => triggerFileInput('back')}
                   sx={{ mt: 1 }}
                 >
                   Reprendre la photo
