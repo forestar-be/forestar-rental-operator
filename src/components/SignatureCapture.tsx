@@ -1,26 +1,40 @@
 import React, { useRef, useState, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { Box, Button, Paper, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Paper,
+  Typography,
+  useTheme,
+  useMediaQuery,
+  TextField,
+} from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import SaveIcon from '@mui/icons-material/Save';
 
 interface SignatureCaptureProps {
   onSave: (signatureDataUrl: string) => void;
   onFinalize?: () => void;
+  setSignatureLocation?: (location: string) => void;
   width?: number | string;
   height?: number | string;
   signatureDataUrl?: string | null;
+  signatureLocation: string | null;
 }
 
 const SignatureCapture: React.FC<SignatureCaptureProps> = ({
   onSave,
   onFinalize,
+  setSignatureLocation,
   width = 400,
   height = 200,
   signatureDataUrl,
+  signatureLocation,
 }) => {
   const signatureCanvasRef = useRef<SignatureCanvas>(null);
   const [isEmpty, setIsEmpty] = useState(!signatureDataUrl);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Effet pour restaurer la signature si signatureDataUrl est défini
   useEffect(() => {
@@ -71,6 +85,13 @@ const SignatureCapture: React.FC<SignatureCaptureProps> = ({
     }
   };
 
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newLocation = e.target.value;
+    if (setSignatureLocation) {
+      setSignatureLocation(newLocation);
+    }
+  };
+
   const handleFinalize = () => {
     const isConfirmed = window.confirm(
       'Êtes-vous sûr de vouloir valider la signature et finaliser le contrat ? Cette action est définitive et vous ne pourrez plus revenir en arrière.',
@@ -92,10 +113,29 @@ const SignatureCapture: React.FC<SignatureCaptureProps> = ({
   return (
     <Paper elevation={2} sx={{ p: 2 }}>
       <Typography variant="subtitle1" gutterBottom>
+        Lieu de signature
+      </Typography>
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        Veuillez indiquer le lieu où le contrat sera signé.
+      </Typography>
+
+      <Box sx={{ mb: 2, mt: 1 }}>
+        <TextField
+          label="Fait à"
+          variant="outlined"
+          fullWidth
+          size="small"
+          value={signatureLocation}
+          onChange={handleLocationChange}
+          placeholder="Ville où le contrat est signé"
+          sx={{ mb: 2 }}
+        />
+      </Box>
+      <Typography variant="subtitle1" gutterBottom>
         Signature du client
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        Veuillez signer dans le cadre ci-dessous:
+        Veuillez signer dans le cadre ci-dessous.
       </Typography>
 
       <Box
@@ -138,14 +178,23 @@ const SignatureCapture: React.FC<SignatureCaptureProps> = ({
       </Box>
 
       <Box
-        display="flex"
-        justifyContent="space-between"
-        sx={{ width: '100%', mt: 2 }}
+        sx={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: isMobile ? 'center' : 'space-between',
+          gap: 2,
+          width: '100%',
+          mt: 2,
+        }}
       >
         <Button
           variant="outlined"
           startIcon={<ClearIcon />}
           onClick={handleClear}
+          sx={{
+            height: isMobile ? '48px' : 'auto',
+            width: isMobile ? '100%' : 'auto',
+          }}
         >
           Effacer
         </Button>
@@ -154,7 +203,11 @@ const SignatureCapture: React.FC<SignatureCaptureProps> = ({
             variant="contained"
             color="primary"
             onClick={handleFinalize}
-            disabled={!signatureDataUrl}
+            disabled={!signatureDataUrl || !signatureLocation}
+            sx={{
+              height: isMobile ? '48px' : 'auto',
+              width: isMobile ? '100%' : 'auto',
+            }}
           >
             Valider la signature et finaliser le contrat
           </Button>

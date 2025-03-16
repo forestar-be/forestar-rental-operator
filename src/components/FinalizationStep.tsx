@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { PDFViewer } from '@react-pdf/renderer';
 import TermsDocument from './TermsDocument';
@@ -51,6 +53,8 @@ const FinalizationStep = ({
   const [emailError, setEmailError] = useState('');
   const [loadingAgreement, setLoadingAgreement] = useState(false);
   const [fileURL, setFileURL] = useState<string | null>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     return () => {
@@ -151,7 +155,16 @@ const FinalizationStep = ({
         Les conditions générales ont été signées avec succès.
       </Alert>
 
-      <Box mt={3} display="flex" justifyContent="center" gap={2}>
+      <Box
+        mt={3}
+        sx={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: isMobile ? 'center' : 'center',
+          gap: 2,
+          width: '100%',
+        }}
+      >
         {rental.finalTermsPdfId && (
           <Button
             variant="contained"
@@ -159,6 +172,10 @@ const FinalizationStep = ({
             startIcon={<DescriptionIcon />}
             onClick={openTermsInNewTab}
             disabled={loading || loadingAgreement}
+            sx={{
+              height: isMobile ? '48px' : 'auto',
+              width: isMobile ? '100%' : 'auto',
+            }}
           >
             {loadingAgreement
               ? 'Chargement...'
@@ -171,17 +188,33 @@ const FinalizationStep = ({
           startIcon={<EmailIcon />}
           onClick={handleSendEmail}
           disabled={!rental || loading}
+          sx={{
+            height: isMobile ? '48px' : 'auto',
+            width: isMobile ? '100%' : 'auto',
+          }}
         >
           {loading ? 'Envoi...' : 'Envoyer par email'}
         </Button>
       </Box>
 
-      <Box mt={3} display="flex" justifyContent="space-between">
+      <Box
+        mt={3}
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          width: '100%',
+        }}
+      >
         <Button
           variant="outlined"
           color="primary"
           onClick={onBack}
           startIcon={<ListIcon />}
+          sx={{
+            height: isMobile ? '48px' : 'auto',
+            width: isMobile ? 'auto' : 'auto',
+          }}
         >
           Retour à la liste
         </Button>
@@ -208,12 +241,32 @@ const FinalizationStep = ({
             helperText={emailError}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEmailDialogOpen(false)}>Annuler</Button>
+        <DialogActions
+          sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: isMobile ? 'center' : 'flex-end',
+            gap: isMobile ? 2 : 1,
+            p: isMobile ? 2 : 1,
+          }}
+        >
+          <Button
+            onClick={() => setEmailDialogOpen(false)}
+            sx={{
+              width: isMobile ? '100%' : 'auto',
+              height: isMobile ? '48px' : 'auto',
+            }}
+          >
+            Annuler
+          </Button>
           <Button
             onClick={handleConfirmEmail}
             variant="contained"
             color="primary"
+            sx={{
+              width: isMobile ? '100%' : 'auto',
+              height: isMobile ? '48px' : 'auto',
+            }}
           >
             Envoyer
           </Button>

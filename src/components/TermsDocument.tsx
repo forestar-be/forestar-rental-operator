@@ -14,6 +14,7 @@ import {
   MachineRentedWithoutRental,
 } from '../utils/types';
 import './TermsDocument.css';
+import { formatPriceNumberToFrenchFormatStr } from '../utils/common.utils';
 
 // Register fonts
 Font.register({
@@ -113,6 +114,7 @@ interface TermsDocumentProps {
   frontIdCardImage?: string;
   backIdCardImage?: string;
   signatureDataUrl?: string;
+  signatureLocation?: string;
   width?: string | number;
   height?: string | number;
 }
@@ -123,6 +125,7 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
   frontIdCardImage: frontIdCardImageBase64,
   backIdCardImage: backIdCardImageBase64,
   signatureDataUrl,
+  signatureLocation,
   width = '100%',
   height = '100%',
 }) => {
@@ -186,6 +189,9 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
             {machine.price_per_day
               ? machine.price_per_day + ' €/jour'
               : 'Non spécifié'}
+          </Text>
+          <Text style={styles.text}>
+            Avec livraison: {rental.with_shipping ? 'Oui' : 'Non'}
           </Text>
         </View>
 
@@ -325,8 +331,8 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
           </Text>
           <Text style={styles.text}>
             Montant total:{' '}
-            {machine.price_per_day
-              ? machine.price_per_day + ' €'
+            {rental.totalPrice
+              ? formatPriceNumberToFrenchFormatStr(rental.totalPrice)
               : 'Non spécifié'}
           </Text>
         </View>
@@ -342,7 +348,8 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
         <View style={styles.section}>
           <Text style={styles.title}>Signature du CLIENT</Text>
           <Text style={styles.text}>
-            Fait à ________________, le {formatDate(new Date())}
+            Fait à {signatureLocation || '________________'}, le{' '}
+            {formatDate(new Date())}
           </Text>
 
           <View style={styles.signatureArea}>
