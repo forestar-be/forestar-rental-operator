@@ -48,7 +48,7 @@ const Home = (): JSX.Element => {
   const auth = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
@@ -56,25 +56,25 @@ const Home = (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [rentals, setRentals] = useState<MachineRentalWithMachineRented[]>([]);
 
-  useEffect(() => {
-    const fetchRentals = async () => {
-      setLoading(true);
-      try {
-        if (auth.token) {
-          const rentalData = await dispatch(
-            fetchMachineRental(auth.token),
-          ).unwrap();
-          setRentals(rentalData);
-        }
-      } catch (error) {
-        console.error('Failed to fetch rentals:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchRentals = async () => {
+  //     setLoading(true);
+  //     try {
+  //       if (auth.token) {
+  //         const rentalData = await dispatch(
+  //           fetchMachineRental(auth.token),
+  //         ).unwrap();
+  //         setRentals(rentalData);
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to fetch rentals:', error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchRentals();
-  }, [auth.token]);
+  //   fetchRentals();
+  // }, [auth.token]);
 
   const filteredRentals = rentals.filter((rental) => {
     const searchLower = searchTerm.toLowerCase();
