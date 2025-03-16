@@ -36,9 +36,9 @@ const RentalHeader = ({
 
   return (
     <>
-      <Box mb={3} display="flex" alignItems="center">
+      <Box mb={3} display="flex" alignItems="start" flexDirection="column">
         <Button startIcon={<ArrowBackIcon />} onClick={onBack} sx={{ mr: 2 }}>
-          Retour
+          Retour à la liste des locations
         </Button>
         <Typography variant="h5" component="h1">
           Location #{rental.id} - {rental.machineRented.name}
