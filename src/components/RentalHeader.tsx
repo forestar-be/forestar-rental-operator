@@ -20,7 +20,7 @@ interface RentalHeaderProps {
 
 const steps = [
   'Informations client',
-  "Photos pièce d'identité",
+  'Photos',
   'Conditions générales',
   'Signature',
   'Finalisation',

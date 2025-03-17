@@ -40,6 +40,7 @@ const getTermsDocument = (
   rental: MachineRentalWithMachineRented,
   frontPhotoDataUrl: string | null,
   backPhotoDataUrl: string | null,
+  machinePhotoDataUrls: string[],
   signatureDataUrl: string | null,
   signatureLocation: string | null,
 ) => {
@@ -49,6 +50,7 @@ const getTermsDocument = (
       machine={rental.machineRented}
       frontIdCardImage={frontPhotoDataUrl!}
       backIdCardImage={backPhotoDataUrl!}
+      machinePhotos={machinePhotoDataUrls}
       signatureDataUrl={signatureDataUrl!}
       signatureLocation={signatureLocation!}
     />
@@ -72,6 +74,10 @@ const RentalDetail = (): JSX.Element => {
     null,
   );
   const [backPhotoDataUrl, setBackPhotoDataUrl] = useState<string | null>(null);
+  const [machinePhotos, setMachinePhotos] = useState<File[]>([]);
+  const [machinePhotoDataUrls, setMachinePhotoDataUrls] = useState<string[]>(
+    [],
+  );
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [signatureLocation, setSignatureLocation] = useState<string | null>(
     null,
@@ -184,6 +190,69 @@ const RentalDetail = (): JSX.Element => {
     }
   };
 
+  const processMachinePhotoFile = (file: File) => {
+    // Convert WebP to JPEG if needed
+    if (file.type === 'image/webp') {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+
+        // Convert to JPEG
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const jpegFile = new File(
+                [blob],
+                file.name.replace('.webp', '.jpg'),
+                {
+                  type: 'image/jpeg',
+                },
+              );
+
+              const reader = new FileReader();
+              reader.onload = (e: ProgressEvent<FileReader>) => {
+                const target = e.target;
+                if (target && target.result) {
+                  setMachinePhotos((prev) => [...prev, jpegFile]);
+                  setMachinePhotoDataUrls((prev) => [
+                    ...prev,
+                    target.result as string,
+                  ]);
+                }
+              };
+              reader.readAsDataURL(jpegFile);
+            }
+          },
+          'image/jpeg',
+          0.9,
+        );
+      };
+
+      img.src = URL.createObjectURL(file);
+    } else {
+      // Handle non-WebP files normally
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const target = e.target;
+        if (target && target.result) {
+          setMachinePhotos((prev) => [...prev, file]);
+          setMachinePhotoDataUrls((prev) => [...prev, target.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveMachinePhoto = (index: number) => {
+    setMachinePhotos((prev) => prev.filter((_, i) => i !== index));
+    setMachinePhotoDataUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleGenerateTerms = async () => {
     if (!id || !auth.token || !frontPhoto || !backPhoto) {
       toast.error(
@@ -212,6 +281,7 @@ const RentalDetail = (): JSX.Element => {
           rental!,
           frontPhotoDataUrl!,
           backPhotoDataUrl!,
+          machinePhotoDataUrls,
           signatureDataUrl!,
           signatureLocation!,
         ),
@@ -325,6 +395,7 @@ const RentalDetail = (): JSX.Element => {
           <PhotoCaptureStep
             frontPhotoDataUrl={frontPhotoDataUrl}
             backPhotoDataUrl={backPhotoDataUrl}
+            machinePhotoDataUrls={machinePhotoDataUrls}
             loading={loading}
             frontPhoto={frontPhoto}
             backPhoto={backPhoto}
@@ -334,6 +405,16 @@ const RentalDetail = (): JSX.Element => {
               // Process the captured photo directly
               processImageFile(file, type);
             }}
+            onMachinePhotoTaken={(file) => {
+              if (machinePhotoDataUrls.length >= 10) {
+                toast.warning(
+                  'Vous ne pouvez pas ajouter plus de 10 photos de la machine',
+                );
+                return;
+              }
+              processMachinePhotoFile(file);
+            }}
+            onMachinePhotoRemove={handleRemoveMachinePhoto}
             onGenerateTerms={handleGenerateTerms}
           />
         );
@@ -344,6 +425,7 @@ const RentalDetail = (): JSX.Element => {
             rental={rental}
             frontPhotoDataUrl={frontPhotoDataUrl}
             backPhotoDataUrl={backPhotoDataUrl}
+            machinePhotoDataUrls={machinePhotoDataUrls}
             signatureDataUrl={signatureDataUrl}
             signatureLocation={signatureLocation}
             onPrevStep={handlePrevStep}
