@@ -20,6 +20,7 @@ interface TermsGenerationStepProps {
   rental: MachineRentalWithMachineRented | null;
   frontPhotoDataUrl: string | null;
   backPhotoDataUrl: string | null;
+  machinePhotoDataUrls: string[];
   signatureDataUrl: string | null;
   onPrevStep: () => void;
   onNextStep: () => void;
@@ -31,6 +32,7 @@ const TermsGenerationStep = ({
   rental,
   frontPhotoDataUrl,
   backPhotoDataUrl,
+  machinePhotoDataUrls,
   signatureDataUrl,
   signatureLocation,
   onPrevStep,
@@ -51,6 +53,7 @@ const TermsGenerationStep = ({
               machine={rental?.machineRented || null}
               frontIdCardImage={frontPhotoDataUrl || undefined}
               backIdCardImage={backPhotoDataUrl || undefined}
+              machinePhotos={machinePhotoDataUrls}
               signatureDataUrl={signatureDataUrl || undefined}
               signatureLocation={signatureLocation || undefined}
             />
@@ -67,7 +70,13 @@ const TermsGenerationStep = ({
     };
 
     generatePdf();
-  }, [rental, frontPhotoDataUrl, backPhotoDataUrl, signatureDataUrl]);
+  }, [
+    rental,
+    frontPhotoDataUrl,
+    backPhotoDataUrl,
+    machinePhotoDataUrls,
+    signatureDataUrl,
+  ]);
 
   return (
     <Box sx={{ mt: 2 }}>

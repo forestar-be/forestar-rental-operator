@@ -15,6 +15,7 @@ export interface MachineRental {
   with_shipping: boolean;
   depositToPay: boolean;
   finalTermsPdfId?: string;
+  createdAt: Date;
 }
 
 export interface MachineRentalWithMachineRented extends MachineRental {

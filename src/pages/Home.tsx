@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/AuthProvider';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -9,12 +9,6 @@ import {
   Container,
   Typography,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Button,
   TextField,
   InputAdornment,
@@ -32,11 +26,15 @@ import {
   MenuItem,
   Stack,
   SelectChangeEvent,
+  GlobalStyles,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
 import ConstructionIcon from '@mui/icons-material/Construction';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -46,6 +44,19 @@ import {
   getMachineRentalList,
   getMachineRentalLoading,
 } from '../store/selectors/machineRentalSelectors';
+import { AgGridReact } from 'ag-grid-react';
+import {
+  ColDef,
+  ICellRendererParams,
+  ValueGetterParams,
+  GridApi,
+  GridReadyEvent,
+} from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+import { StyledAgGridWrapper } from '../components/styles/AgGridStyles';
+import { AG_GRID_LOCALE_FR } from '@ag-grid-community/locale';
+import SortIcon from '@mui/icons-material/Sort';
 
 // Extend Day.js with plugins
 dayjs.extend(relativeTime);
@@ -54,6 +65,11 @@ dayjs.extend(localizedFormat);
 // Set dayjs locale globally
 dayjs.locale('fr');
 
+// Type definition for cell renderer params
+interface RentalCellRendererParams extends ICellRendererParams {
+  data: MachineRentalWithMachineRented;
+}
+
 const Home = (): JSX.Element => {
   const auth = useAuth();
   const theme = useTheme();
@@ -61,30 +77,226 @@ const Home = (): JSX.Element => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
+  // Grid API reference
+  const [gridApi, setGridApi] = useState<GridApi | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [signedFilter, setSignedFilter] = useState<
+    'all' | 'signed' | 'unsigned'
+  >('all');
+
+  // Add sort state
+  const [sortConfig, setSortConfig] = useState({
+    key: 'createdAt', // Default sort by creation date
+    direction: 'desc' as 'asc' | 'desc', // Default sort direction
+  });
 
   const loading = useAppSelector(getMachineRentalLoading);
   const rentals: MachineRentalWithMachineRented[] =
     useAppSelector(getMachineRentalList);
 
-  const filteredRentals = rentals.filter((rental) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      rental.clientFirstName.toLowerCase().includes(searchLower) ||
-      rental.clientLastName.toLowerCase().includes(searchLower) ||
-      rental.clientEmail.toLowerCase().includes(searchLower) ||
-      rental.clientPhone.toLowerCase().includes(searchLower) ||
-      rental.machineRented.name.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredRentals = rentals
+    .filter((rental) => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        rental.clientFirstName.toLowerCase().includes(searchLower) ||
+        rental.clientLastName.toLowerCase().includes(searchLower) ||
+        rental.clientEmail.toLowerCase().includes(searchLower) ||
+        rental.clientPhone.toLowerCase().includes(searchLower) ||
+        rental.machineRented.name.toLowerCase().includes(searchLower);
+
+      // Apply the signed filter
+      if (signedFilter === 'all') {
+        return matchesSearch;
+      } else if (signedFilter === 'signed') {
+        return matchesSearch && !!rental.finalTermsPdfId;
+      } else {
+        return matchesSearch && !rental.finalTermsPdfId;
+      }
+    })
+    .sort((a, b) => {
+      // Apply the selected sort configuration
+      const { key, direction } = sortConfig;
+      let comparison = 0;
+
+      switch (key) {
+        case 'machineName':
+          comparison = (a.machineRented.name || '').localeCompare(
+            b.machineRented.name || '',
+          );
+          break;
+        case 'clientName':
+          const clientA = `${a.clientFirstName} ${a.clientLastName}`;
+          const clientB = `${b.clientFirstName} ${b.clientLastName}`;
+          comparison = clientA.localeCompare(clientB);
+          break;
+        case 'rentalDate':
+          if (!a.rentalDate) return 1;
+          if (!b.rentalDate) return -1;
+          comparison =
+            new Date(a.rentalDate).getTime() - new Date(b.rentalDate).getTime();
+          break;
+        case 'returnDate':
+          if (!a.returnDate) return 1;
+          if (!b.returnDate) return -1;
+          comparison =
+            new Date(a.returnDate).getTime() - new Date(b.returnDate).getTime();
+          break;
+        case 'createdAt':
+        default:
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          comparison =
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+
+      // Apply sort direction
+      return direction === 'asc' ? comparison : -comparison;
+    });
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredRentals.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRentals = filteredRentals.slice(startIndex, endIndex);
+
+  // AG Grid column definitions
+  const columnDefs = useMemo<ColDef<MachineRentalWithMachineRented>[]>(
+    () => [
+      {
+        headerName: 'Machine',
+        sortable: true,
+        filter: true,
+        cellRenderer: (params: RentalCellRendererParams) => {
+          if (!params.data) return null;
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <ConstructionIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              {params.data.machineRented.name}
+            </Box>
+          );
+        },
+      },
+      {
+        headerName: 'Créé le',
+        sortable: true,
+        filter: true,
+        valueFormatter: (params) => {
+          if (!params.value || !params.data) return 'N/A';
+          return params.data.createdAt
+            ? dayjs(params.data.createdAt).format('L LT')
+            : 'N/A';
+        },
+        valueGetter: (
+          params: ValueGetterParams<MachineRentalWithMachineRented>,
+        ) => {
+          if (!params.data) return null;
+          return params.data.createdAt;
+        },
+        sort: 'desc', // Set default sort to descending (newest first)
+      },
+      {
+        headerName: 'Début',
+        sortable: true,
+        filter: true,
+        valueFormatter: (params) => {
+          if (!params.value || !params.data) return 'N/A';
+          return params.data.rentalDate
+            ? dayjs(params.data.rentalDate).format('L')
+            : 'N/A';
+        },
+        valueGetter: (
+          params: ValueGetterParams<MachineRentalWithMachineRented>,
+        ) => {
+          if (!params.data) return null;
+          return params.data.rentalDate;
+        },
+      },
+      {
+        headerName: 'Retour',
+        sortable: true,
+        filter: true,
+        valueFormatter: (params) => {
+          if (!params.value || !params.data) return 'N/A';
+          return params.data.returnDate
+            ? dayjs(params.data.returnDate).format('L')
+            : 'N/A';
+        },
+        valueGetter: (
+          params: ValueGetterParams<MachineRentalWithMachineRented>,
+        ) => {
+          if (!params.data) return null;
+          return params.data.returnDate;
+        },
+      },
+      {
+        headerName: 'Client',
+        sortable: true,
+        filter: true,
+        valueGetter: (
+          params: ValueGetterParams<MachineRentalWithMachineRented>,
+        ) => {
+          if (!params.data) return '';
+          return `${params.data.clientFirstName} ${params.data.clientLastName}`;
+        },
+      },
+      {
+        headerName: 'Contact',
+        sortable: true,
+        filter: true,
+        valueGetter: (
+          params: ValueGetterParams<MachineRentalWithMachineRented>,
+        ) => {
+          if (!params.data) return '';
+          return params.data.clientPhone;
+        },
+      },
+      {
+        headerName: 'Statut',
+        sortable: true,
+        filter: true,
+        cellRenderer: (params: RentalCellRendererParams) => {
+          if (!params.data) return null;
+          return params.data.finalTermsPdfId ? (
+            <Chip label="Signé" color="success" size="small" />
+          ) : (
+            <Chip label="Non signé" color="default" size="small" />
+          );
+        },
+      },
+      {
+        headerName: 'Actions',
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: RentalCellRendererParams) => {
+          if (!params.data) return null;
+          return (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => handleRentalSelect(params.data)}
+            >
+              Gérer
+            </Button>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
+  // AG Grid default column definitions
+  const defaultColDef = useMemo(
+    () => ({
+      flex: 1,
+      minWidth: 100,
+      resizable: true,
+    }),
+    [],
+  );
 
   // Handle page change
   const handlePageChange = (
@@ -106,10 +318,27 @@ const Home = (): JSX.Element => {
     navigate(`/rental/${rental.id}`);
   };
 
-  // Reset to page 1 when search term changes
+  // Reset to page 1 when search term or signed filter changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, signedFilter]);
+
+  // Handle sort change
+  const handleSortChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    const [key, direction] = value.split('-');
+    setSortConfig({ key, direction: direction as 'asc' | 'desc' });
+  };
+
+  // Handle signed filter change
+  const handleSignedFilterChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newValue: 'all' | 'signed' | 'unsigned' | null,
+  ) => {
+    if (newValue !== null) {
+      setSignedFilter(newValue);
+    }
+  };
 
   // Render rental card for mobile/tablet view
   const renderRentalCard = (rental: MachineRentalWithMachineRented) => {
@@ -142,6 +371,16 @@ const Home = (): JSX.Element => {
               {rental.rentalDate ? dayjs(rental.rentalDate).format('L') : 'N/A'}
               {' → '}
               {rental.returnDate ? dayjs(rental.returnDate).format('L') : 'N/A'}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
+            <Typography variant="body2" color="text.secondary">
+              Créé le:{' '}
+              {rental.createdAt
+                ? dayjs(rental.createdAt).format('L LT')
+                : 'N/A'}
             </Typography>
           </Box>
 
@@ -217,39 +456,113 @@ const Home = (): JSX.Element => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
-      <Box sx={{ mb: isMobile ? 2 : 4 }}>
+      <Box sx={{ mb: isMobile ? 1 : 2 }}>
         <Typography
-          variant={isMobile ? 'h5' : 'h4'}
+          variant={isMobile ? 'h6' : 'h5'}
           component="h1"
           gutterBottom
         >
           Gestion des Locations
         </Typography>
-        <Typography
-          variant={isMobile ? 'body2' : 'body1'}
-          color="text.secondary"
-          gutterBottom={!isMobile}
-        >
-          Sélectionnez une location pour générer et faire signer les conditions
-          générales.
-        </Typography>
+        {!isMobile && (
+          <Typography
+            variant={'body2'}
+            color="text.secondary"
+            gutterBottom={!isMobile}
+          >
+            Sélectionnez une location pour générer et faire signer les
+            conditions générales.
+          </Typography>
+        )}
 
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Rechercher par client ou machine..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ mt: isMobile ? 1 : 2 }}
-          size={isMobile ? 'small' : 'medium'}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+            mt: isMobile ? 1 : 2,
           }}
-        />
+        >
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Rechercher par client ou machine..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size={'small'}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {/* Add sort dropdown for mobile/tablet view */}
+            {(isMobile || isTablet) && (
+              <FormControl
+                sx={{ minWidth: isMobile ? 115 : 150, flexShrink: 0 }}
+                size={isMobile || isTablet ? 'small' : 'medium'}
+              >
+                <Select
+                  value={`${sortConfig.key}-${sortConfig.direction}`}
+                  onChange={handleSortChange}
+                  displayEmpty
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <SortIcon fontSize="small" />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="createdAt-desc">Plus récent</MenuItem>
+                  <MenuItem value="createdAt-asc">Plus ancien</MenuItem>
+                  <MenuItem value="machineName-asc">Machine ↑</MenuItem>
+                  <MenuItem value="machineName-desc">Machine ↓</MenuItem>
+                  <MenuItem value="clientName-asc">Client ↑</MenuItem>
+                  <MenuItem value="clientName-desc">Client ↓</MenuItem>
+                  <MenuItem value="rentalDate-asc">Date début ↑</MenuItem>
+                  <MenuItem value="rentalDate-desc">Date début ↓</MenuItem>
+                  <MenuItem value="returnDate-asc">Date retour ↑</MenuItem>
+                  <MenuItem value="returnDate-desc">Date retour ↓</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+
+          {/* Add signed filter toggle buttons */}
+          <ToggleButtonGroup
+            value={signedFilter}
+            exclusive
+            onChange={handleSignedFilterChange}
+            aria-label="Filtre de signature"
+            size={'small'}
+            sx={{
+              alignSelf: 'flex-start',
+              '.MuiToggleButtonGroup-grouped': {
+                border: 1,
+                borderColor: 'divider',
+                '&.Mui-selected': {
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.1),
+                  borderColor: 'primary.main',
+                  '&:hover': {
+                    backgroundColor: (theme) =>
+                      alpha(theme.palette.primary.main, 0.15),
+                  },
+                },
+              },
+            }}
+          >
+            <ToggleButton value="all">Toutes</ToggleButton>
+            <ToggleButton value="signed">
+              <CheckCircleOutlineIcon sx={{ mr: 0.5 }} fontSize="small" />
+              Signées
+            </ToggleButton>
+            <ToggleButton value="unsigned">Non signées</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {loading ? (
@@ -276,85 +589,90 @@ const Home = (): JSX.Element => {
               )}
             </Grid>
           ) : (
-            // Desktop view - table
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Machine</TableCell>
-                    <TableCell>Client</TableCell>
-                    <TableCell>Contact</TableCell>
-                    <TableCell>Date de location</TableCell>
-                    <TableCell>Date de retour</TableCell>
-                    <TableCell>Statut</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedRentals.length > 0 ? (
-                    paginatedRentals.map((rental) => (
-                      <TableRow
-                        key={rental.id}
-                        sx={{
-                          backgroundColor: rental.finalTermsPdfId
-                            ? alpha(theme.palette.success.light, 0.1)
-                            : 'inherit',
-                        }}
-                      >
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <ConstructionIcon
-                              sx={{ mr: 1, color: 'text.secondary' }}
-                            />
-                            {rental.machineRented.name}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {rental.clientFirstName} {rental.clientLastName}
-                        </TableCell>
-                        <TableCell>{rental.clientPhone}</TableCell>
-                        <TableCell>
-                          {rental.rentalDate
-                            ? dayjs(rental.rentalDate).format('L')
-                            : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {rental.returnDate
-                            ? dayjs(rental.returnDate).format('L')
-                            : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {rental.finalTermsPdfId ? (
-                            <Chip label="Signé" color="success" size="small" />
-                          ) : (
-                            <Chip
-                              label="Non signé"
-                              color="default"
-                              size="small"
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleRentalSelect(rental)}
-                          >
-                            Gérer
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        Aucune location trouvée.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            // Desktop view - AG Grid table
+            <Paper
+              sx={{
+                width: '100%',
+                height: '500px', // Fixed height instead of calc
+                minHeight: '400px',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                p: 0, // Remove padding
+              }}
+            >
+              <StyledAgGridWrapper
+                className={`ag-theme-quartz${theme.palette.mode === 'dark' ? '-dark' : ''}`}
+                style={{
+                  height: '100%',
+                  width: '100%',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                }}
+              >
+                {paginatedRentals.length > 0 ? (
+                  <>
+                    <AgGridReact
+                      rowData={paginatedRentals}
+                      columnDefs={columnDefs}
+                      defaultColDef={defaultColDef}
+                      animateRows={true}
+                      rowHeight={52}
+                      headerHeight={48}
+                      domLayout="normal"
+                      localeText={AG_GRID_LOCALE_FR}
+                      suppressPaginationPanel={true}
+                      enableCellTextSelection={true}
+                      onGridReady={(params: GridReadyEvent) => {
+                        try {
+                          setGridApi(params.api);
+
+                          // Resize columns to fit the available width
+                          if (params.api) {
+                            params.api.sizeColumnsToFit();
+
+                            // Handle window resize events
+                            const handleResize = () => {
+                              setTimeout(() => {
+                                params.api.sizeColumnsToFit();
+                              }, 100);
+                            };
+
+                            window.addEventListener('resize', handleResize);
+
+                            // Clean up the event listener on component unmount
+                            return () => {
+                              window.removeEventListener(
+                                'resize',
+                                handleResize,
+                              );
+                            };
+                          }
+                        } catch (error) {
+                          console.error(
+                            'Error during grid initialization:',
+                            error,
+                          );
+                        }
+                      }}
+                    />
+                  </>
+                ) : (
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    height="100%"
+                  >
+                    <Typography variant="body1">
+                      Aucune location trouvée.
+                    </Typography>
+                  </Box>
+                )}
+              </StyledAgGridWrapper>
+            </Paper>
           )}
 
           {/* Pagination controls */}

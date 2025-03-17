@@ -46,6 +46,14 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 15,
   },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  column: {
+    width: '48%',
+  },
   title: {
     fontSize: 14,
     fontWeight: 'bold',
@@ -92,10 +100,48 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 15,
   },
-  idCardImage: {
+  idCardImageContainer: {
     width: '48%',
     height: 120,
     border: '1px solid #bfbfbf',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  idCardImage: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain',
+  },
+  machinePhotosContainer: {
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  machinePhotoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    marginTop: 10,
+  },
+  machinePhotosGrid: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: 5,
+  },
+  machinePhotoContainer: {
+    width: '48%',
+    height: 120,
+    margin: 3,
+    border: '1px solid #bfbfbf',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  machinePhoto: {
+    maxWidth: '100%',
+    maxHeight: '100%',
     objectFit: 'contain',
   },
   footer: {
@@ -113,6 +159,7 @@ interface TermsDocumentProps {
   machine: MachineRentedWithoutRental;
   frontIdCardImage?: string;
   backIdCardImage?: string;
+  machinePhotos?: string[];
   signatureDataUrl?: string;
   signatureLocation?: string;
   width?: string | number;
@@ -124,6 +171,7 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
   machine,
   frontIdCardImage: frontIdCardImageBase64,
   backIdCardImage: backIdCardImageBase64,
+  machinePhotos = [],
   signatureDataUrl,
   signatureLocation,
   width = '100%',
@@ -159,40 +207,44 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
           CONTRAT DE LOCATION DE MATÉRIEL FORESTIER
         </Text>
 
-        <View style={styles.section}>
-          <Text style={styles.title}>Informations du Client</Text>
-          <Text style={styles.text}>Nom: {customerName || 'Non spécifié'}</Text>
-          <Text style={styles.text}>
-            Email: {rental.clientEmail || 'Non spécifié'}
-          </Text>
-          <Text style={styles.text}>
-            Téléphone: {rental.clientPhone || 'Non spécifié'}
-          </Text>
-          <Text style={styles.text}>
-            Adresse: {customerAddress || 'Non spécifié'}
-          </Text>
-        </View>
+        <View style={styles.rowContainer}>
+          <View style={styles.column}>
+            <Text style={styles.title}>Informations du Client</Text>
+            <Text style={styles.text}>
+              Nom: {customerName || 'Non spécifié'}
+            </Text>
+            <Text style={styles.text}>
+              Email: {rental.clientEmail || 'Non spécifié'}
+            </Text>
+            <Text style={styles.text}>
+              Téléphone: {rental.clientPhone || 'Non spécifié'}
+            </Text>
+            <Text style={styles.text}>
+              Adresse: {customerAddress || 'Non spécifié'}
+            </Text>
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.title}>Détails de la Location</Text>
-          <Text style={styles.text}>
-            Machine: {machine.name || 'Non spécifié'}
-          </Text>
-          <Text style={styles.text}>
-            Date de début: {formatDate(rental.rentalDate)}
-          </Text>
-          <Text style={styles.text}>
-            Date de fin: {formatDate(rental.returnDate)}
-          </Text>
-          <Text style={styles.text}>
-            Prix:{' '}
-            {machine.price_per_day
-              ? machine.price_per_day + ' €/jour'
-              : 'Non spécifié'}
-          </Text>
-          <Text style={styles.text}>
-            Avec livraison: {rental.with_shipping ? 'Oui' : 'Non'}
-          </Text>
+          <View style={styles.column}>
+            <Text style={styles.title}>Détails de la Location</Text>
+            <Text style={styles.text}>
+              Machine: {machine.name || 'Non spécifié'}
+            </Text>
+            <Text style={styles.text}>
+              Date de début: {formatDate(rental.rentalDate)}
+            </Text>
+            <Text style={styles.text}>
+              Date de fin: {formatDate(rental.returnDate)}
+            </Text>
+            <Text style={styles.text}>
+              Prix:{' '}
+              {machine.price_per_day
+                ? machine.price_per_day + ' €/jour'
+                : 'Non spécifié'}
+            </Text>
+            <Text style={styles.text}>
+              Avec livraison: {rental.with_shipping ? 'Oui' : 'Non'}
+            </Text>
+          </View>
         </View>
 
         {(frontIdCardImageBase64 || backIdCardImageBase64) && (
@@ -200,19 +252,23 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
             <Text style={styles.title}>Pièce d'identité</Text>
             <View style={styles.idCardContainer}>
               {frontIdCardImageBase64 ? (
-                <Image
-                  src={frontIdCardImageBase64}
-                  style={styles.idCardImage}
-                />
+                <View style={styles.idCardImageContainer}>
+                  <Image
+                    src={frontIdCardImageBase64}
+                    style={styles.idCardImage}
+                  />
+                </View>
               ) : (
                 <View
-                  style={[styles.idCardImage, { backgroundColor: '#f0f0f0' }]}
+                  style={[
+                    styles.idCardImageContainer,
+                    { backgroundColor: '#f0f0f0' },
+                  ]}
                 >
                   <Text
                     style={{
                       fontSize: 8,
                       textAlign: 'center',
-                      marginTop: 50,
                     }}
                   >
                     Recto manquant
@@ -220,29 +276,46 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
                 </View>
               )}
               {backIdCardImageBase64 ? (
-                <Image
-                  src={backIdCardImageBase64}
-                  style={{
-                    ...styles.idCardImage,
-                    width: 250,
-                    height: 120,
-                  }}
-                />
+                <View style={styles.idCardImageContainer}>
+                  <Image
+                    src={backIdCardImageBase64}
+                    style={styles.idCardImage}
+                  />
+                </View>
               ) : (
                 <View
-                  style={[styles.idCardImage, { backgroundColor: '#f0f0f0' }]}
+                  style={[
+                    styles.idCardImageContainer,
+                    { backgroundColor: '#f0f0f0' },
+                  ]}
                 >
                   <Text
                     style={{
                       fontSize: 8,
                       textAlign: 'center',
-                      marginTop: 50,
                     }}
                   >
                     Verso manquant
                   </Text>
                 </View>
               )}
+            </View>
+          </View>
+        )}
+
+        {/* Machine Photos */}
+        {machinePhotos && machinePhotos.length > 0 && (
+          <View style={styles.machinePhotosContainer}>
+            <Text style={styles.machinePhotoTitle}>Photos de la machine</Text>
+            <View style={styles.machinePhotosGrid}>
+              {machinePhotos.map((photo, index) => (
+                <View
+                  key={`machine-photo-${index}`}
+                  style={styles.machinePhotoContainer}
+                >
+                  <Image src={photo} style={styles.machinePhoto} />
+                </View>
+              ))}
             </View>
           </View>
         )}
