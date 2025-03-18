@@ -51,6 +51,7 @@ import {
   ValueGetterParams,
   GridApi,
   GridReadyEvent,
+  PaginationChangedEvent,
 } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -157,7 +158,7 @@ const Home = (): JSX.Element => {
       return direction === 'asc' ? comparison : -comparison;
     });
 
-  // Calculate pagination
+  // Calculate pagination for mobile/tablet view only
   const totalPages = Math.ceil(filteredRentals.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -281,7 +282,7 @@ const Home = (): JSX.Element => {
     [],
   );
 
-  // Handle page change
+  // Handle page change for mobile/tablet view
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
     value: number,
@@ -291,7 +292,16 @@ const Home = (): JSX.Element => {
     window.scrollTo(0, 0);
   };
 
-  // Handle items per page change
+  // Handle pagination changed in AG Grid
+  const handlePaginationChanged = (event: PaginationChangedEvent) => {
+    if (gridApi) {
+      // If needed, you can get the current page and page size here
+      // const currentPage = event.api.paginationGetCurrentPage() + 1;
+      // const pageSize = event.api.paginationGetPageSize();
+    }
+  };
+
+  // Handle items per page change for mobile/tablet view
   const handleItemsPerPageChange = (event: SelectChangeEvent<number>) => {
     setItemsPerPage(event.target.value as number);
     setPage(1); // Reset to first page when changing items per page
@@ -304,7 +314,11 @@ const Home = (): JSX.Element => {
   // Reset to page 1 when search term or signed filter changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, signedFilter]);
+    // If grid is ready, update the AG Grid pagination too
+    if (gridApi) {
+      gridApi.paginationGoToPage(0); // AG Grid uses 0-based indexing for pages
+    }
+  }, [searchTerm, signedFilter, gridApi]);
 
   // Handle sort change
   const handleSortChange = (event: SelectChangeEvent<string>) => {
@@ -379,7 +393,7 @@ const Home = (): JSX.Element => {
     );
   };
 
-  // Render pagination controls
+  // Render pagination controls for mobile/tablet view
   const renderPaginationControls = () => {
     return (
       <Box
@@ -428,16 +442,16 @@ const Home = (): JSX.Element => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
-      <Box sx={{ mb: isMobile ? 1 : 2 }}>
-        <Typography
+    <Container maxWidth="lg" sx={{ mt: 2, mb: isMobile || isTablet ? 4 : 0 }}>
+      <Box sx={{ mb: 1 }}>
+        {/* <Typography
           variant={isMobile ? 'h6' : 'h5'}
           component="h1"
           gutterBottom
         >
           Gestion des Locations
-        </Typography>
-        {!isMobile && (
+        </Typography> */}
+        {/* {!isMobile && (
           <Typography
             variant={'body2'}
             color="text.secondary"
@@ -446,7 +460,7 @@ const Home = (): JSX.Element => {
             Sélectionnez une location pour générer et faire signer les
             conditions générales.
           </Typography>
-        )}
+        )} */}
 
         <Box
           sx={{
@@ -456,28 +470,32 @@ const Home = (): JSX.Element => {
             mt: isMobile ? 1 : 2,
           }}
         >
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Rechercher par client ou machine..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size={'small'}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+          {/* Extract common components and render different layouts based on screen size */}
+          {(() => {
+            // Common search field configuration
+            const searchField = (
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Rechercher par client ou machine..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                size={'small'}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            );
 
-            {/* Add sort dropdown for mobile/tablet view */}
-            {(isMobile || isTablet) && (
+            // Common sort dropdown configuration
+            const sortDropdown = (
               <FormControl
                 sx={{ minWidth: isMobile ? 115 : 150, flexShrink: 0 }}
-                size={isMobile || isTablet ? 'small' : 'medium'}
+                size={'small'}
               >
                 <Select
                   value={`${sortConfig.key}-${sortConfig.direction}`}
@@ -499,40 +517,66 @@ const Home = (): JSX.Element => {
                   <MenuItem value="clientName-desc">Client ↓</MenuItem>
                 </Select>
               </FormControl>
-            )}
-          </Box>
+            );
 
-          {/* Add signed filter toggle buttons */}
-          <ToggleButtonGroup
-            value={signedFilter}
-            exclusive
-            onChange={handleSignedFilterChange}
-            aria-label="Filtre de signature"
-            size={'small'}
-            sx={{
-              alignSelf: 'flex-start',
-              '.MuiToggleButtonGroup-grouped': {
-                border: 1,
-                borderColor: 'divider',
-                '&.Mui-selected': {
-                  backgroundColor: (theme) =>
-                    alpha(theme.palette.primary.main, 0.1),
-                  borderColor: 'primary.main',
-                  '&:hover': {
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.primary.main, 0.15),
+            // Common toggle button group configuration
+            const toggleButtons = (
+              <ToggleButtonGroup
+                value={signedFilter}
+                exclusive
+                onChange={handleSignedFilterChange}
+                aria-label="Filtre de signature"
+                size={'small'}
+                sx={{
+                  height: 40,
+                  ...(isMobile || isTablet
+                    ? { flexGrow: 1 }
+                    : { alignSelf: 'flex-start' }),
+                  '.MuiToggleButtonGroup-grouped': {
+                    fontSize: isMobile || isTablet ? undefined : 12,
+                    border: 1,
+                    borderColor: 'divider',
+                    '&.Mui-selected': {
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.1),
+                      borderColor: 'primary.main',
+                      '&:hover': {
+                        backgroundColor: (theme) =>
+                          alpha(theme.palette.primary.main, 0.15),
+                      },
+                    },
                   },
-                },
-              },
-            }}
-          >
-            <ToggleButton value="all">Toutes</ToggleButton>
-            <ToggleButton value="signed">
-              <CheckCircleOutlineIcon sx={{ mr: 0.5 }} fontSize="small" />
-              Signées
-            </ToggleButton>
-            <ToggleButton value="unsigned">Non signées</ToggleButton>
-          </ToggleButtonGroup>
+                }}
+              >
+                <ToggleButton value="all">Toutes</ToggleButton>
+                <ToggleButton value="signed">
+                  <CheckCircleOutlineIcon sx={{ mr: 0.5 }} fontSize="small" />
+                  Signées
+                </ToggleButton>
+                <ToggleButton value="unsigned">Non signées</ToggleButton>
+              </ToggleButtonGroup>
+            );
+
+            // Render layout based on screen size
+            if (isMobile || isTablet) {
+              return (
+                <>
+                  {searchField}
+                  <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+                    {sortDropdown}
+                    {toggleButtons}
+                  </Box>
+                </>
+              );
+            } else {
+              return (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {searchField}
+                  {toggleButtons}
+                </Box>
+              );
+            }
+          })()}
         </Box>
       </Box>
 
@@ -560,12 +604,12 @@ const Home = (): JSX.Element => {
               )}
             </Grid>
           ) : (
-            // Desktop view - AG Grid table
+            // Desktop view - AG Grid table with native pagination
             <Paper
               sx={{
                 width: '100%',
-                height: '500px', // Fixed height instead of calc
-                minHeight: '400px',
+                height: '500px',
+                minHeight: 'calc(100vh - 135px)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
@@ -583,18 +627,15 @@ const Home = (): JSX.Element => {
                   position: 'relative',
                 }}
               >
-                {paginatedRentals.length > 0 ? (
+                {filteredRentals.length > 0 ? (
                   <>
                     <AgGridReact
-                      rowData={paginatedRentals}
+                      rowData={filteredRentals}
                       columnDefs={columnDefs}
                       defaultColDef={defaultColDef}
                       animateRows={true}
-                      rowHeight={52}
-                      headerHeight={48}
-                      domLayout="normal"
+                      rowHeight={48}
                       localeText={AG_GRID_LOCALE_FR}
-                      suppressPaginationPanel={true}
                       enableCellTextSelection={true}
                       onGridReady={(params: GridReadyEvent) => {
                         try {
@@ -628,6 +669,12 @@ const Home = (): JSX.Element => {
                           );
                         }
                       }}
+                      // Enable pagination
+                      pagination={true}
+                      paginationPageSize={10}
+                      paginationPageSizeSelector={[5, 10, 25, 50]}
+                      suppressPaginationPanel={false}
+                      onPaginationChanged={handlePaginationChanged}
                     />
                   </>
                 ) : (
@@ -646,8 +693,10 @@ const Home = (): JSX.Element => {
             </Paper>
           )}
 
-          {/* Pagination controls */}
-          {filteredRentals.length > 0 && renderPaginationControls()}
+          {/* Pagination controls for mobile/tablet view only */}
+          {(isMobile || isTablet) &&
+            filteredRentals.length > 0 &&
+            renderPaginationControls()}
         </>
       )}
     </Container>
