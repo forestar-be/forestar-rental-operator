@@ -89,8 +89,8 @@ const Home = (): JSX.Element => {
 
   // Add sort state
   const [sortConfig, setSortConfig] = useState({
-    key: 'createdAt', // Default sort by creation date
-    direction: 'desc' as 'asc' | 'desc', // Default sort direction
+    key: 'rentalDate', // Changed from 'createdAt' to 'rentalDate'
+    direction: 'desc' as 'asc' | 'desc', // Changed from 'asc' to 'desc'
   });
 
   const loading = useAppSelector(getMachineRentalLoading);
@@ -144,12 +144,12 @@ const Home = (): JSX.Element => {
           comparison =
             new Date(a.returnDate).getTime() - new Date(b.returnDate).getTime();
           break;
-        case 'createdAt':
         default:
-          if (!a.createdAt) return 1;
-          if (!b.createdAt) return -1;
+          // Default to rental date if no key matches
+          if (!a.rentalDate) return 1;
+          if (!b.rentalDate) return -1;
           comparison =
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            new Date(a.rentalDate).getTime() - new Date(b.rentalDate).getTime();
           break;
       }
 
@@ -181,24 +181,6 @@ const Home = (): JSX.Element => {
         },
       },
       {
-        headerName: 'Créé le',
-        sortable: true,
-        filter: true,
-        valueFormatter: (params) => {
-          if (!params.value || !params.data) return 'N/A';
-          return params.data.createdAt
-            ? dayjs(params.data.createdAt).format('L LT')
-            : 'N/A';
-        },
-        valueGetter: (
-          params: ValueGetterParams<MachineRentalWithMachineRented>,
-        ) => {
-          if (!params.data) return null;
-          return params.data.createdAt;
-        },
-        sort: 'desc', // Set default sort to descending (newest first)
-      },
-      {
         headerName: 'Début',
         sortable: true,
         filter: true,
@@ -214,6 +196,7 @@ const Home = (): JSX.Element => {
           if (!params.data) return null;
           return params.data.rentalDate;
         },
+        sort: 'desc', // Changed from 'asc' to 'desc'
       },
       {
         headerName: 'Retour',
@@ -374,16 +357,6 @@ const Home = (): JSX.Element => {
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body2" color="text.secondary">
-              Créé le:{' '}
-              {rental.createdAt
-                ? dayjs(rental.createdAt).format('L LT')
-                : 'N/A'}
-            </Typography>
-          </Box>
-
           {rental.finalTermsPdfId && (
             <Chip
               label="Signé"
@@ -516,16 +489,14 @@ const Home = (): JSX.Element => {
                     </InputAdornment>
                   }
                 >
-                  <MenuItem value="createdAt-desc">Plus récent</MenuItem>
-                  <MenuItem value="createdAt-asc">Plus ancien</MenuItem>
-                  <MenuItem value="machineName-asc">Machine ↑</MenuItem>
-                  <MenuItem value="machineName-desc">Machine ↓</MenuItem>
-                  <MenuItem value="clientName-asc">Client ↑</MenuItem>
-                  <MenuItem value="clientName-desc">Client ↓</MenuItem>
                   <MenuItem value="rentalDate-asc">Date début ↑</MenuItem>
                   <MenuItem value="rentalDate-desc">Date début ↓</MenuItem>
                   <MenuItem value="returnDate-asc">Date retour ↑</MenuItem>
                   <MenuItem value="returnDate-desc">Date retour ↓</MenuItem>
+                  <MenuItem value="machineName-asc">Machine ↑</MenuItem>
+                  <MenuItem value="machineName-desc">Machine ↓</MenuItem>
+                  <MenuItem value="clientName-asc">Client ↑</MenuItem>
+                  <MenuItem value="clientName-desc">Client ↓</MenuItem>
                 </Select>
               </FormControl>
             )}
