@@ -26,6 +26,9 @@ import SignatureStep from '../components/SignatureStep';
 import FinalizationStep from '../components/FinalizationStep';
 import RentalHeader from '../components/RentalHeader';
 import TermsDocument from '../components/TermsDocument';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { fetchAllRentalTerms } from '../store/slices/rentalTermsSlice';
 window.Buffer = window.Buffer || require('buffer').Buffer;
 
 // Extend Day.js with plugins
@@ -43,6 +46,7 @@ const getTermsDocument = (
   machinePhotoDataUrls: string[],
   signatureDataUrl: string | null,
   signatureLocation: string | null,
+  terms: any[],
 ) => {
   return (
     <TermsDocument
@@ -53,6 +57,7 @@ const getTermsDocument = (
       machinePhotos={machinePhotoDataUrls}
       signatureDataUrl={signatureDataUrl!}
       signatureLocation={signatureLocation!}
+      terms={terms}
     />
   );
 };
@@ -61,6 +66,8 @@ const RentalDetail = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const auth = useAuth();
+  const dispatch = useDispatch();
+  const { terms } = useSelector((state: RootState) => state.rentalTerms);
 
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -88,7 +95,7 @@ const RentalDetail = (): JSX.Element => {
     document: <Document />,
   });
 
-  // Fetch rental data
+  // Fetch rental data and terms
   useEffect(() => {
     const getRental = async () => {
       if (!id || !auth.token) return;
@@ -97,6 +104,9 @@ const RentalDetail = (): JSX.Element => {
       try {
         const rentalData = await fetchMachineRentalById(id, auth.token);
         setRental(rentalData);
+
+        // Load rental terms from Redux store
+        dispatch(fetchAllRentalTerms(auth.token) as any);
 
         // Set the active step based on the rental state
         if (rentalData.finalTermsPdfId) {
@@ -113,7 +123,7 @@ const RentalDetail = (): JSX.Element => {
     };
 
     getRental();
-  }, [id, auth.token]);
+  }, [id, auth.token, dispatch]);
 
   const handleBack = () => {
     navigate('/');
@@ -284,6 +294,7 @@ const RentalDetail = (): JSX.Element => {
           machinePhotoDataUrls,
           signatureDataUrl!,
           signatureLocation!,
+          terms,
         ),
       );
     } catch (error) {
@@ -430,6 +441,7 @@ const RentalDetail = (): JSX.Element => {
             signatureLocation={signatureLocation}
             onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
+            terms={terms}
           />
         );
       case 3:

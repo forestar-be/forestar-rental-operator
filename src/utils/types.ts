@@ -83,3 +83,19 @@ export interface ConfigElement {
   key: string;
   value: string;
 }
+
+export enum RentalTermType {
+  TITLE = 'TITLE',
+  SUBTITLE = 'SUBTITLE',
+  SUBTITLE2 = 'SUBTITLE2',
+  PARAGRAPH = 'PARAGRAPH',
+}
+
+export interface RentalTerm {
+  id: number;
+  content: string;
+  type: RentalTermType;
+  order: number;
+  createdAt: Date;
+  updatedAt: Date;
+}

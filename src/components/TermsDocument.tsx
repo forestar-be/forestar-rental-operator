@@ -12,6 +12,8 @@ import {
 import {
   MachineRentalWithMachineRented,
   MachineRentedWithoutRental,
+  RentalTerm,
+  RentalTermType,
 } from '../utils/types';
 import './TermsDocument.css';
 import { formatPriceNumberToFrenchFormatStr } from '../utils/common.utils';
@@ -54,10 +56,31 @@ const styles = StyleSheet.create({
   column: {
     width: '48%',
   },
+  titleTerms: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    marginTop: 10,
+    borderBottomWidth: 3,
+    borderBottomColor: 'red',
+  },
   title: {
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 3,
+    marginTop: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#cccccc',
+  },
+  subtitle2: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    paddingLeft: 5,
   },
   text: {
     fontSize: 10,
@@ -164,6 +187,7 @@ interface TermsDocumentProps {
   signatureLocation?: string;
   width?: string | number;
   height?: string | number;
+  terms: RentalTerm[];
 }
 
 const TermsDocument: React.FC<TermsDocumentProps> = ({
@@ -176,6 +200,7 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
   signatureLocation,
   width = '100%',
   height = '100%',
+  terms = [],
 }) => {
   const formatDate = (date: string | Date | null) => {
     if (!date) return 'Non spécifié';
@@ -198,6 +223,25 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
   ]
     .filter(Boolean)
     .join(', ');
+
+  // Function to render terms based on their type
+  const renderTerm = (term: RentalTerm) => {
+    switch (term.type) {
+      case RentalTermType.TITLE:
+        return <Text style={styles.titleTerms}>{term.content}</Text>;
+      case RentalTermType.SUBTITLE:
+        return <Text style={styles.subtitle}>{term.content}</Text>;
+      case RentalTermType.SUBTITLE2:
+        return <Text style={styles.subtitle2}>{term.content}</Text>;
+      case RentalTermType.PARAGRAPH:
+      default:
+        return (
+          <Text key={term.id} style={styles.text}>
+            {term.content}
+          </Text>
+        );
+    }
+  };
 
   return (
     <Document>
@@ -329,60 +373,19 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
       <Page size="A4" style={styles.page}>
         <Text style={styles.header}>CONDITIONS GÉNÉRALES DE LOCATION</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.title}>1. OBJET DU CONTRAT</Text>
-          <Text style={styles.text}>
-            Le présent contrat a pour objet la location par FORESTAR d'un
-            matériel forestier au CLIENT, pour son usage exclusif.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.title}>2. DURÉE DE LA LOCATION</Text>
-          <Text style={styles.text}>
-            La location prend effet à compter de la date de prise en charge du
-            matériel par le CLIENT et se termine à la date convenue de
-            restitution.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.title}>3. OBLIGATIONS DU CLIENT</Text>
-          <Text style={styles.text}>
-            Le CLIENT s'engage à utiliser le matériel conformément à sa
-            destination et aux réglementations en vigueur, avec prudence et
-            diligence.
-          </Text>
-          <Text style={styles.text}>
-            Le CLIENT s'engage à maintenir le matériel en bon état de
-            fonctionnement et à le restituer dans le même état qu'il lui a été
-            remis.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.title}>4. RESPONSABILITÉ ET ASSURANCE</Text>
-          <Text style={styles.text}>
-            Le CLIENT est responsable des dommages causés au matériel pendant la
-            durée de la location.
-          </Text>
-          <Text style={styles.text}>
-            Le CLIENT doit être assuré pour la responsabilité civile et les
-            dommages au matériel loué.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.title}>5. PAIEMENT</Text>
-          <Text style={styles.text}>
-            Le prix de la location est fixé selon les tarifs en vigueur au
-            moment de la conclusion du contrat.
-          </Text>
-          <Text style={styles.text}>
-            Le paiement doit être effectué selon les modalités convenues entre
-            les parties.
-          </Text>
-        </View>
+        {terms && terms.length > 0 ? (
+          <View style={styles.section}>
+            {terms.map((term) => renderTerm(term))}
+          </View>
+        ) : (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.title}>
+                ERREUR : Aucune condition générale de location trouvée
+              </Text>
+            </View>
+          </>
+        )}
 
         <Text style={styles.footer}>
           Page 2/3 - FORESTAR - Contrat de location {rental.id}

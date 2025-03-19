@@ -313,3 +313,45 @@ export const getRentalAgreement = async (
     token,
   );
 };
+
+// Rental Terms API functions
+export const fetchRentalTerms = async (token: string) => {
+  return await apiRequest('/rental-operator/rental-terms', 'GET', token);
+};
+
+export const addRentalTerm = async (
+  token: string,
+  term: { content: string; type: string; order: number },
+) => {
+  return await apiRequest('/rental-operator/rental-terms', 'POST', token, term);
+};
+
+export const updateRentalTerm = async (
+  token: string,
+  id: number,
+  updates: { content?: string; type?: string; order?: number },
+) => {
+  return await apiRequest(
+    `/rental-operator/rental-terms/${id}`,
+    'PATCH',
+    token,
+    updates,
+  );
+};
+
+export const deleteRentalTerm = async (token: string, id: number) => {
+  return await apiRequest(
+    `/rental-operator/rental-terms/${id}`,
+    'DELETE',
+    token,
+  );
+};
+
+export const reorderRentalTerms = async (token: string, termIds: number[]) => {
+  return await apiRequest(
+    '/rental-operator/rental-terms/reorder',
+    'POST',
+    token,
+    { termIds },
+  );
+};
