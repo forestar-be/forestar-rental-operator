@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/AuthProvider';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -77,6 +83,7 @@ const Home = (): JSX.Element => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const gridRef = useRef<AgGridReact>(null);
 
   // Grid API reference
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
@@ -84,6 +91,7 @@ const Home = (): JSX.Element => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [paginationPageSize, setPaginationPageSize] = useState(10);
   const [signedFilter, setSignedFilter] = useState<
     'all' | 'signed' | 'unsigned'
   >('all');
@@ -292,15 +300,6 @@ const Home = (): JSX.Element => {
     window.scrollTo(0, 0);
   };
 
-  // Handle pagination changed in AG Grid
-  const handlePaginationChanged = (event: PaginationChangedEvent) => {
-    if (gridApi) {
-      // If needed, you can get the current page and page size here
-      // const currentPage = event.api.paginationGetCurrentPage() + 1;
-      // const pageSize = event.api.paginationGetPageSize();
-    }
-  };
-
   // Handle items per page change for mobile/tablet view
   const handleItemsPerPageChange = (event: SelectChangeEvent<number>) => {
     setItemsPerPage(event.target.value as number);
@@ -440,6 +439,83 @@ const Home = (): JSX.Element => {
       </Box>
     );
   };
+
+  // Calculate optimal number of items per page based on available height
+  const calculatePageSize = useCallback(() => {
+    if (!isMobile && !isTablet) {
+      const tableContainer = document.querySelector('.ag-root-wrapper');
+      const header = document.querySelector('.ag-header-viewport');
+      const footer = document.querySelector('.ag-paging-panel');
+
+      if (tableContainer && header && footer) {
+        const containerHeight = tableContainer.parentElement?.clientHeight || 0;
+        const headerHeight = header.clientHeight || 48;
+        const footerHeight = footer.clientHeight || 48;
+        const rowHeight = 48; // Row height is set to 48 in AgGridReact props
+
+        const availableHeight = containerHeight - headerHeight - footerHeight;
+        const newPageSize = Math.max(
+          5,
+          Math.floor(availableHeight / rowHeight),
+        );
+
+        setPaginationPageSize(newPageSize);
+      }
+    }
+  }, [gridApi, isMobile, isTablet, itemsPerPage]);
+
+  // Add effect to calculate page size on mount and when dependencies change
+  useEffect(() => {
+    calculatePageSize();
+    // Small delay to ensure DOM is fully rendered
+    const timeoutId = setTimeout(() => {
+      calculatePageSize();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [calculatePageSize, loading]);
+
+  // Add resize event listener
+  useEffect(() => {
+    window.addEventListener('resize', calculatePageSize);
+    return () => {
+      window.removeEventListener('resize', calculatePageSize);
+    };
+  }, [calculatePageSize]);
+
+  // Update onGridReady to call calculatePageSize after grid is ready
+  const onGridReady = useCallback(
+    (params: GridReadyEvent) => {
+      try {
+        setGridApi(params.api);
+
+        // Size columns to fit
+        if (params.api) {
+          params.api.sizeColumnsToFit();
+
+          // Calculate page size after grid is ready
+          setTimeout(calculatePageSize, 100);
+        }
+
+        // Handle window resize events
+        const handleResize = () => {
+          setTimeout(() => {
+            params.api.sizeColumnsToFit();
+          }, 100);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Clean up the event listener on component unmount
+        return () => {
+          window.removeEventListener('resize', handleResize);
+        };
+      } catch (error) {
+        console.error('Error during grid initialization:', error);
+      }
+    },
+    [calculatePageSize],
+  );
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, mb: isMobile || isTablet ? 4 : 0 }}>
@@ -608,8 +684,7 @@ const Home = (): JSX.Element => {
             <Paper
               sx={{
                 width: '100%',
-                height: '500px',
-                minHeight: 'calc(100vh - 135px)',
+                height: 'calc(100vh - 135px)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
@@ -630,6 +705,7 @@ const Home = (): JSX.Element => {
                 {filteredRentals.length > 0 ? (
                   <>
                     <AgGridReact
+                      ref={gridRef}
                       rowData={filteredRentals}
                       columnDefs={columnDefs}
                       defaultColDef={defaultColDef}
@@ -637,44 +713,11 @@ const Home = (): JSX.Element => {
                       rowHeight={48}
                       localeText={AG_GRID_LOCALE_FR}
                       enableCellTextSelection={true}
-                      onGridReady={(params: GridReadyEvent) => {
-                        try {
-                          setGridApi(params.api);
-
-                          // Resize columns to fit the available width
-                          if (params.api) {
-                            params.api.sizeColumnsToFit();
-
-                            // Handle window resize events
-                            const handleResize = () => {
-                              setTimeout(() => {
-                                params.api.sizeColumnsToFit();
-                              }, 100);
-                            };
-
-                            window.addEventListener('resize', handleResize);
-
-                            // Clean up the event listener on component unmount
-                            return () => {
-                              window.removeEventListener(
-                                'resize',
-                                handleResize,
-                              );
-                            };
-                          }
-                        } catch (error) {
-                          console.error(
-                            'Error during grid initialization:',
-                            error,
-                          );
-                        }
-                      }}
-                      // Enable pagination
+                      onGridReady={onGridReady}
                       pagination={true}
-                      paginationPageSize={10}
-                      paginationPageSizeSelector={[5, 10, 25, 50]}
+                      paginationPageSize={paginationPageSize}
+                      paginationPageSizeSelector={false}
                       suppressPaginationPanel={false}
-                      onPaginationChanged={handlePaginationChanged}
                     />
                   </>
                 ) : (
