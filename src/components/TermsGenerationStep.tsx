@@ -13,7 +13,7 @@ import PDFtoIMG from './PDFtoIMG';
 import { pdf } from '@react-pdf/renderer';
 import TermsDocument from './TermsDocument';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { MachineRentalWithMachineRented } from '../utils/types';
+import { MachineRentalWithMachineRented, RentalTerm } from '../utils/types';
 
 interface TermsGenerationStepProps {
   loading: boolean;
@@ -25,6 +25,7 @@ interface TermsGenerationStepProps {
   onPrevStep: () => void;
   onNextStep: () => void;
   signatureLocation: string | null;
+  terms: RentalTerm[];
 }
 
 const TermsGenerationStep = ({
@@ -37,6 +38,7 @@ const TermsGenerationStep = ({
   signatureLocation,
   onPrevStep,
   onNextStep,
+  terms = [],
 }: TermsGenerationStepProps): JSX.Element => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -56,6 +58,7 @@ const TermsGenerationStep = ({
               machinePhotos={machinePhotoDataUrls}
               signatureDataUrl={signatureDataUrl || undefined}
               signatureLocation={signatureLocation || undefined}
+              terms={terms}
             />
           );
 
@@ -76,6 +79,7 @@ const TermsGenerationStep = ({
     backPhotoDataUrl,
     machinePhotoDataUrls,
     signatureDataUrl,
+    terms,
   ]);
 
   return (

@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 import machineRentalReducer from './slices/machineRentalSlice';
+import rentalTermsReducer from './slices/rentalTermsSlice';
 
 // Configure the store
 const store = configureStore({
   reducer: {
     machineRental: machineRentalReducer,
+    rentalTerms: rentalTermsReducer,
   },
 });
 

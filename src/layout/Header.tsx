@@ -82,6 +82,20 @@ const Header = ({ onSidebarOpen }: Props): JSX.Element => {
               />
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <IconButton
+                  component="a"
+                  href={`/parametres`}
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                    e.preventDefault();
+                    navigate(`/parametres`);
+                  }}
+                  aria-label="Paramètres"
+                  color={theme.palette.mode === 'dark' ? 'warning' : 'inherit'}
+                >
+                  <Tooltip title="Paramètres">
+                    <SettingsIcon fontSize="medium" />
+                  </Tooltip>
+                </IconButton>
+                <IconButton
                   onClick={auth.logOut}
                   aria-label="Déconnexion"
                   color={theme.palette.mode === 'dark' ? 'warning' : 'inherit'}

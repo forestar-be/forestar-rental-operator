@@ -22,6 +22,7 @@ import { StoreInitializer } from './store/initializer';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import Settings from './pages/Settings';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -76,6 +77,7 @@ const App = (): JSX.Element => {
                       <Route element={<AuthRoute />}>
                         <Route path="/" element={<Home />} />
                         <Route path="/rental/:id" element={<RentalDetail />} />
+                        <Route path="/parametres" element={<Settings />} />
                       </Route>
                       <Route path="*" element={<NotFoundPage />} />
                     </Routes>
