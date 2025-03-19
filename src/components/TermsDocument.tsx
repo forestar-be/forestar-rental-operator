@@ -175,6 +175,12 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'center',
   },
+  titleContainer: {
+    breakAfter: 'avoid',
+  },
+  subtitleContainer: {
+    breakAfter: 'avoid',
+  },
 });
 
 interface TermsDocumentProps {
@@ -228,11 +234,23 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
   const renderTerm = (term: RentalTerm) => {
     switch (term.type) {
       case RentalTermType.TITLE:
-        return <Text style={styles.titleTerms}>{term.content}</Text>;
+        return (
+          <View style={styles.titleContainer}>
+            <Text style={styles.titleTerms}>{term.content}</Text>
+          </View>
+        );
       case RentalTermType.SUBTITLE:
-        return <Text style={styles.subtitle}>{term.content}</Text>;
+        return (
+          <View style={styles.subtitleContainer}>
+            <Text style={styles.subtitle}>{term.content}</Text>
+          </View>
+        );
       case RentalTermType.SUBTITLE2:
-        return <Text style={styles.subtitle2}>{term.content}</Text>;
+        return (
+          <View style={styles.subtitleContainer}>
+            <Text style={styles.subtitle2}>{term.content}</Text>
+          </View>
+        );
       case RentalTermType.PARAGRAPH:
       default:
         return (
@@ -374,9 +392,7 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
         <Text style={styles.header}>CONDITIONS GÉNÉRALES DE LOCATION</Text>
 
         {terms && terms.length > 0 ? (
-          <View style={styles.section}>
-            {terms.map((term) => renderTerm(term))}
-          </View>
+          terms.map((term) => renderTerm(term))
         ) : (
           <>
             <View style={styles.section}>
