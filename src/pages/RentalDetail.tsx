@@ -14,6 +14,7 @@ import {
   fetchMachineRentalById,
   saveSignature,
   sendTermsEmail,
+  updateMachineRentalState,
 } from '../utils/api';
 import { MachineRentalWithMachineRented } from '../utils/types';
 import { toast } from 'react-toastify';
@@ -320,7 +321,7 @@ const RentalDetail = (): JSX.Element => {
           }
 
           // Now we need to send the complete PDF with ID cards and signature to the backend
-          const result = await saveSignature(id!, auth.token, pdfInstance.blob);
+          await saveSignature(id!, auth.token, pdfInstance.blob);
 
           // Reload rental data
           const updatedRental = await fetchMachineRentalById(id!, auth.token);
@@ -368,6 +369,27 @@ const RentalDetail = (): JSX.Element => {
     }
   };
 
+  const handleUpdateRental = async (data: {
+    depositToPay?: boolean;
+    operatingHours?: number;
+    fuelLevel?: number;
+  }) => {
+    if (!id || !auth.token) return;
+
+    try {
+      await updateMachineRentalState(id, auth.token, data);
+
+      // Reload rental data to update UI
+      const updatedRental = await fetchMachineRentalById(id, auth.token);
+      setRental(updatedRental);
+
+      toast.success('Informations de la machine mises à jour');
+    } catch (error) {
+      console.error('Failed to update machine state:', error);
+      toast.error('Erreur lors de la mise à jour des informations');
+    }
+  };
+
   if (loading && !rental) {
     return (
       <Box
@@ -400,7 +422,13 @@ const RentalDetail = (): JSX.Element => {
   const getStepContent = () => {
     switch (activeStep) {
       case 0:
-        return <ClientInfoStep rental={rental} onNextStep={handleNextStep} />;
+        return (
+          <ClientInfoStep
+            rental={rental}
+            onNextStep={handleNextStep}
+            onUpdateRental={handleUpdateRental}
+          />
+        );
       case 1:
         return (
           <PhotoCaptureStep
