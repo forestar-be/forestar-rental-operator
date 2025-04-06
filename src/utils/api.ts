@@ -362,3 +362,20 @@ export const reorderRentalTerms = async (token: string, termIds: number[]) => {
     { termIds },
   );
 };
+
+export const updateMachineRentalState = async (
+  id: string,
+  token: string,
+  data: {
+    depositToPay?: boolean;
+    operatingHours?: number;
+    fuelLevel?: number;
+  },
+): Promise<MachineRentalWithMachineRented> => {
+  return await apiRequest(
+    `/rental-operator/machine-rental/${id}/update-state`,
+    'PATCH',
+    token,
+    data,
+  );
+};

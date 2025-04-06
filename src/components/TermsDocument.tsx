@@ -306,6 +306,20 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
             <Text style={styles.text}>
               Avec livraison: {rental.with_shipping ? 'Oui' : 'Non'}
             </Text>
+            <Text style={styles.text}>
+              Caution à payer: {rental.depositToPay ? 'Oui' : 'Non'}
+            </Text>
+            {machine.operatingHours !== undefined &&
+              machine.operatingHours !== null && (
+                <Text style={styles.text}>
+                  Heures de fonctionnement: {machine.operatingHours} h
+                </Text>
+              )}
+            {machine.fuelLevel !== undefined && machine.fuelLevel !== null && (
+              <Text style={styles.text}>
+                Niveau de carburant: {machine.fuelLevel}%
+              </Text>
+            )}
           </View>
         </View>
 
