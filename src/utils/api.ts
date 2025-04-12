@@ -74,6 +74,10 @@ const apiRequest = async (
   return data;
 };
 
+export const login = async (data: any) => {
+  return apiRequest('/rental-operator/login', 'POST', '', data);
+};
+
 export const getAllMachineRented = async (
   token: string,
   withImages = false,
