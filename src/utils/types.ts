@@ -1,3 +1,8 @@
+export interface MachineRentalAccessory {
+  accessoryName: string;
+  price_per_day: number;
+}
+
 export interface MachineRental {
   id: string;
   machineRentedId: string;
@@ -16,6 +21,7 @@ export interface MachineRental {
   depositToPay: boolean;
   finalTermsPdfId?: string;
   createdAt: Date;
+  accessories?: MachineRentalAccessory[];
 }
 
 export interface MachineRentalWithMachineRented extends MachineRental {

@@ -309,6 +309,14 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
             <Text style={styles.text}>
               Caution à payer: {rental.depositToPay ? 'Oui' : 'Non'}
             </Text>
+            {rental.accessories && rental.accessories.length > 0 && (
+              <Text style={styles.text}>
+                Accessoires:{' '}
+                {rental.accessories
+                  .map((a) => `${a.accessoryName} (${a.price_per_day} €/jour)`)
+                  .join(', ')}
+              </Text>
+            )}
             {machine.operatingHours !== undefined &&
               machine.operatingHours !== null && (
                 <Text style={styles.text}>
@@ -435,12 +443,161 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
             Période de location: du {formatDate(rental.rentalDate)} au{' '}
             {formatDate(rental.returnDate)}
           </Text>
-          <Text style={styles.text}>
-            Montant total:{' '}
-            {rental.totalPrice
-              ? formatPriceNumberToFrenchFormatStr(rental.totalPrice)
-              : 'Non spécifié'}
-          </Text>
+
+          {/* Detailed price breakdown table */}
+          {(() => {
+            const startDate = rental.rentalDate
+              ? new Date(rental.rentalDate)
+              : null;
+            const endDate = rental.returnDate
+              ? new Date(rental.returnDate)
+              : null;
+            const diffDays =
+              startDate && endDate
+                ? Math.round(
+                    (endDate.getTime() - startDate.getTime()) /
+                      (1000 * 60 * 60 * 24),
+                  ) + 1
+                : 0;
+            const machineDailyPrice = machine.price_per_day || 0;
+            const accessories = rental.accessories || [];
+            const accessoriesDailyTotal = accessories.reduce(
+              (sum, a) => sum + a.price_per_day,
+              0,
+            );
+            const dailyTotal = machineDailyPrice + accessoriesDailyTotal;
+            const rentalSubtotal = dailyTotal * diffDays;
+
+            return (
+              <View style={styles.table}>
+                {/* Header */}
+                <View style={[styles.tableRow, { backgroundColor: '#f0f0f0' }]}>
+                  <View style={[styles.tableCol, { width: '50%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      Description
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      Prix/jour
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      Sous-total
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Machine row */}
+                <View style={styles.tableRow}>
+                  <View style={[styles.tableCol, { width: '50%' }]}>
+                    <Text style={styles.tableCell}>
+                      {machine.name || 'Machine'}
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={styles.tableCell}>
+                      {formatPriceNumberToFrenchFormatStr(machineDailyPrice)}
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={styles.tableCell}>
+                      {formatPriceNumberToFrenchFormatStr(
+                        machineDailyPrice * diffDays,
+                      )}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Accessory rows */}
+                {accessories.map((acc) => (
+                  <View style={styles.tableRow} key={acc.accessoryName}>
+                    <View style={[styles.tableCol, { width: '50%' }]}>
+                      <Text style={styles.tableCell}>{acc.accessoryName}</Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '25%' }]}>
+                      <Text style={styles.tableCell}>
+                        {formatPriceNumberToFrenchFormatStr(acc.price_per_day)}
+                      </Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '25%' }]}>
+                      <Text style={styles.tableCell}>
+                        {formatPriceNumberToFrenchFormatStr(
+                          acc.price_per_day * diffDays,
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+
+                {/* Days row */}
+                <View style={[styles.tableRow, { backgroundColor: '#fafafa' }]}>
+                  <View style={[styles.tableCol, { width: '50%' }]}>
+                    <Text style={styles.tableCell}>
+                      Nombre de jours de location
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={styles.tableCell}></Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      {diffDays} jour{diffDays > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Shipping row (if applicable) */}
+                {rental.with_shipping && (
+                  <View style={styles.tableRow}>
+                    <View style={[styles.tableCol, { width: '50%' }]}>
+                      <Text style={styles.tableCell}>Livraison</Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '25%' }]}>
+                      <Text style={styles.tableCell}></Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '25%' }]}>
+                      <Text style={styles.tableCell}>Incluse</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Deposit row (if applicable) */}
+                {rental.depositToPay && machine.deposit > 0 && (
+                  <View style={styles.tableRow}>
+                    <View style={[styles.tableCol, { width: '50%' }]}>
+                      <Text style={styles.tableCell}>Caution</Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '25%' }]}>
+                      <Text style={styles.tableCell}></Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '25%' }]}>
+                      <Text style={styles.tableCell}>
+                        {formatPriceNumberToFrenchFormatStr(machine.deposit)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Total row */}
+                <View style={[styles.tableRow, { backgroundColor: '#f0f0f0' }]}>
+                  <View style={[styles.tableCol, { width: '75%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      TOTAL
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '25%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      {rental.totalPrice
+                        ? formatPriceNumberToFrenchFormatStr(rental.totalPrice)
+                        : formatPriceNumberToFrenchFormatStr(rentalSubtotal)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })()}
         </View>
 
         <View style={styles.section}>
