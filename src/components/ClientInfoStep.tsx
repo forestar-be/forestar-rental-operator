@@ -114,6 +114,16 @@ const ClientInfoStep = ({
               ? formatPriceNumberToFrenchFormatStr(rental.totalPrice)
               : 'Non spécifié'}
           </Typography>
+          {rental.accessories && rental.accessories.length > 0 && (
+            <>
+              <Typography variant="subtitle2">Accessoires</Typography>
+              <Typography variant="body1" gutterBottom>
+                {rental.accessories
+                  .map((a) => `${a.accessoryName} (${a.price_per_day} €/jour)`)
+                  .join(', ')}
+              </Typography>
+            </>
+          )}
         </Grid>
       </Grid>
 
