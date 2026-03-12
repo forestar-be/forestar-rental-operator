@@ -114,16 +114,37 @@ const ClientInfoStep = ({
               ? formatPriceNumberToFrenchFormatStr(rental.totalPrice)
               : 'Non spécifié'}
           </Typography>
-          {rental.accessories && rental.accessories.length > 0 && (
-            <>
-              <Typography variant="subtitle2">Accessoires</Typography>
-              <Typography variant="body1" gutterBottom>
-                {rental.accessories
-                  .map((a) => `${a.accessoryName} (${a.price_per_day} €/jour)`)
-                  .join(', ')}
-              </Typography>
-            </>
-          )}
+          {rental.addons &&
+            rental.addons.filter((a) => a.category === 'accessory').length >
+              0 && (
+              <>
+                <Typography variant="subtitle2">Accessoires</Typography>
+                <Typography variant="body1" gutterBottom>
+                  {rental.addons
+                    .filter((a) => a.category === 'accessory')
+                    .map(
+                      (a) =>
+                        `${a.addonName} (${a.price} €${a.price_type === 'per_day' ? '/jour' : ''}${a.quantity > 1 ? ` x${a.quantity}` : ''})`,
+                    )
+                    .join(', ')}
+                </Typography>
+              </>
+            )}
+          {rental.addons &&
+            rental.addons.filter((a) => a.category === 'option').length > 0 && (
+              <>
+                <Typography variant="subtitle2">Options</Typography>
+                <Typography variant="body1" gutterBottom>
+                  {rental.addons
+                    .filter((a) => a.category === 'option')
+                    .map(
+                      (a) =>
+                        `${a.addonName} (${a.price} €${a.price_type === 'per_day' ? '/jour' : ''}${a.quantity > 1 ? ` x${a.quantity}` : ''})`,
+                    )
+                    .join(', ')}
+                </Typography>
+              </>
+            )}
         </Grid>
       </Grid>
 

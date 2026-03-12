@@ -309,14 +309,34 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
             <Text style={styles.text}>
               Caution à payer: {rental.depositToPay ? 'Oui' : 'Non'}
             </Text>
-            {rental.accessories && rental.accessories.length > 0 && (
-              <Text style={styles.text}>
-                Accessoires:{' '}
-                {rental.accessories
-                  .map((a) => `${a.accessoryName} (${a.price_per_day} €/jour)`)
-                  .join(', ')}
-              </Text>
-            )}
+            {rental.addons &&
+              rental.addons.filter((a) => a.category === 'accessory').length >
+                0 && (
+                <Text style={styles.text}>
+                  Accessoires:{' '}
+                  {rental.addons
+                    .filter((a) => a.category === 'accessory')
+                    .map(
+                      (a) =>
+                        `${a.addonName} (${a.price} €${a.price_type === 'per_day' ? '/jour' : ''}${a.quantity > 1 ? ` x${a.quantity}` : ''})`,
+                    )
+                    .join(', ')}
+                </Text>
+              )}
+            {rental.addons &&
+              rental.addons.filter((a) => a.category === 'option').length >
+                0 && (
+                <Text style={styles.text}>
+                  Options:{' '}
+                  {rental.addons
+                    .filter((a) => a.category === 'option')
+                    .map(
+                      (a) =>
+                        `${a.addonName} (${a.price} €${a.price_type === 'per_day' ? '/jour' : ''}${a.quantity > 1 ? ` x${a.quantity}` : ''})`,
+                    )
+                    .join(', ')}
+                </Text>
+              )}
             {machine.operatingHours !== undefined &&
               machine.operatingHours !== null && (
                 <Text style={styles.text}>
@@ -460,26 +480,30 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
                   ) + 1
                 : 0;
             const machineDailyPrice = machine.price_per_day || 0;
-            const accessories = rental.accessories || [];
-            const accessoriesDailyTotal = accessories.reduce(
-              (sum, a) => sum + a.price_per_day,
-              0,
-            );
-            const dailyTotal = machineDailyPrice + accessoriesDailyTotal;
-            const rentalSubtotal = dailyTotal * diffDays;
+            const addons = rental.addons || [];
+            const addonsTotal = addons.reduce((sum, acc) => {
+              const multiplier = acc.price_type === 'per_day' ? diffDays : 1;
+              return sum + acc.price * acc.quantity * multiplier;
+            }, 0);
+            const rentalSubtotal = machineDailyPrice * diffDays + addonsTotal;
 
             return (
               <View style={styles.table}>
                 {/* Header */}
                 <View style={[styles.tableRow, { backgroundColor: '#f0f0f0' }]}>
-                  <View style={[styles.tableCol, { width: '50%' }]}>
+                  <View style={[styles.tableCol, { width: '40%' }]}>
                     <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
                       Description
                     </Text>
                   </View>
-                  <View style={[styles.tableCol, { width: '25%' }]}>
+                  <View style={[styles.tableCol, { width: '20%' }]}>
                     <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
-                      Prix/jour
+                      Prix unitaire
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '15%' }]}>
+                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
+                      Qté
                     </Text>
                   </View>
                   <View style={[styles.tableCol, { width: '25%' }]}>
@@ -491,15 +515,18 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
 
                 {/* Machine row */}
                 <View style={styles.tableRow}>
-                  <View style={[styles.tableCol, { width: '50%' }]}>
+                  <View style={[styles.tableCol, { width: '40%' }]}>
                     <Text style={styles.tableCell}>
-                      {machine.name || 'Machine'}
+                      {machine.name || 'Machine'} (par jour)
                     </Text>
                   </View>
-                  <View style={[styles.tableCol, { width: '25%' }]}>
+                  <View style={[styles.tableCol, { width: '20%' }]}>
                     <Text style={styles.tableCell}>
                       {formatPriceNumberToFrenchFormatStr(machineDailyPrice)}
                     </Text>
+                  </View>
+                  <View style={[styles.tableCol, { width: '15%' }]}>
+                    <Text style={styles.tableCell}>{diffDays} j</Text>
                   </View>
                   <View style={[styles.tableCol, { width: '25%' }]}>
                     <Text style={styles.tableCell}>
@@ -510,51 +537,50 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
                   </View>
                 </View>
 
-                {/* Accessory rows */}
-                {accessories.map((acc) => (
-                  <View style={styles.tableRow} key={acc.accessoryName}>
-                    <View style={[styles.tableCol, { width: '50%' }]}>
-                      <Text style={styles.tableCell}>{acc.accessoryName}</Text>
+                {/* Addon rows */}
+                {addons.map((addon) => {
+                  const isPerDay = addon.price_type === 'per_day';
+                  const multiplier = isPerDay ? diffDays : 1;
+                  const subtotal = addon.price * addon.quantity * multiplier;
+                  return (
+                    <View style={styles.tableRow} key={addon.addonName}>
+                      <View style={[styles.tableCol, { width: '40%' }]}>
+                        <Text style={styles.tableCell}>
+                          {addon.addonName}
+                          {isPerDay ? ' (par jour)' : ''}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: '20%' }]}>
+                        <Text style={styles.tableCell}>
+                          {formatPriceNumberToFrenchFormatStr(addon.price)}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: '15%' }]}>
+                        <Text style={styles.tableCell}>
+                          {isPerDay
+                            ? `${addon.quantity} x ${diffDays} j`
+                            : `${addon.quantity}`}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: '25%' }]}>
+                        <Text style={styles.tableCell}>
+                          {formatPriceNumberToFrenchFormatStr(subtotal)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={[styles.tableCol, { width: '25%' }]}>
-                      <Text style={styles.tableCell}>
-                        {formatPriceNumberToFrenchFormatStr(acc.price_per_day)}
-                      </Text>
-                    </View>
-                    <View style={[styles.tableCol, { width: '25%' }]}>
-                      <Text style={styles.tableCell}>
-                        {formatPriceNumberToFrenchFormatStr(
-                          acc.price_per_day * diffDays,
-                        )}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-
-                {/* Days row */}
-                <View style={[styles.tableRow, { backgroundColor: '#fafafa' }]}>
-                  <View style={[styles.tableCol, { width: '50%' }]}>
-                    <Text style={styles.tableCell}>
-                      Nombre de jours de location
-                    </Text>
-                  </View>
-                  <View style={[styles.tableCol, { width: '25%' }]}>
-                    <Text style={styles.tableCell}></Text>
-                  </View>
-                  <View style={[styles.tableCol, { width: '25%' }]}>
-                    <Text style={[styles.tableCell, { fontWeight: 'bold' }]}>
-                      {diffDays} jour{diffDays > 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                </View>
+                  );
+                })}
 
                 {/* Shipping row (if applicable) */}
                 {rental.with_shipping && (
                   <View style={styles.tableRow}>
-                    <View style={[styles.tableCol, { width: '50%' }]}>
+                    <View style={[styles.tableCol, { width: '40%' }]}>
                       <Text style={styles.tableCell}>Livraison</Text>
                     </View>
-                    <View style={[styles.tableCol, { width: '25%' }]}>
+                    <View style={[styles.tableCol, { width: '20%' }]}>
+                      <Text style={styles.tableCell}></Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '15%' }]}>
                       <Text style={styles.tableCell}></Text>
                     </View>
                     <View style={[styles.tableCol, { width: '25%' }]}>
@@ -566,10 +592,13 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
                 {/* Deposit row (if applicable) */}
                 {rental.depositToPay && machine.deposit > 0 && (
                   <View style={styles.tableRow}>
-                    <View style={[styles.tableCol, { width: '50%' }]}>
+                    <View style={[styles.tableCol, { width: '40%' }]}>
                       <Text style={styles.tableCell}>Caution</Text>
                     </View>
-                    <View style={[styles.tableCol, { width: '25%' }]}>
+                    <View style={[styles.tableCol, { width: '20%' }]}>
+                      <Text style={styles.tableCell}></Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: '15%' }]}>
                       <Text style={styles.tableCell}></Text>
                     </View>
                     <View style={[styles.tableCol, { width: '25%' }]}>
