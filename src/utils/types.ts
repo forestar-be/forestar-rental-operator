@@ -18,7 +18,13 @@ export interface MachineRental {
   clientAddress: string;
   clientPostal: string;
   clientCity: string;
-  paid: boolean;
+  status: 'PENDING_APPROVAL' | 'PAYMENT_PENDING' | 'PAID' | 'CANCELLED';
+  paymentAmount?: number | null;
+  paymentDueAt?: Date | null;
+  cancellationDueAt?: Date | null;
+  structuredCommunication?: string | null;
+  paidAt?: Date | null;
+  cancelledAt?: Date | null;
   guests: string[];
   with_shipping: boolean;
   depositToPay: boolean;
@@ -34,7 +40,15 @@ export interface MachineRentalWithMachineRented extends MachineRental {
 
 export type MachineRentalToCreate = Omit<
   MachineRental,
-  'id' | 'machineRentedId'
+  | 'id'
+  | 'machineRentedId'
+  | 'status'
+  | 'paymentAmount'
+  | 'paymentDueAt'
+  | 'cancellationDueAt'
+  | 'structuredCommunication'
+  | 'paidAt'
+  | 'cancelledAt'
 >;
 
 export interface MaintenanceHistory {
