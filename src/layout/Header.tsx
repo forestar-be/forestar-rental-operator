@@ -21,6 +21,7 @@ import { Logo } from '../components/Logo';
 import { useAuth } from '../hooks/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
+import AccountMenu from '../components/AccountMenu';
 
 interface Props {
   onSidebarOpen: () => void;
@@ -95,15 +96,19 @@ const Header = ({ onSidebarOpen }: Props): JSX.Element => {
                     <SettingsIcon fontSize="medium" />
                   </Tooltip>
                 </IconButton>
-                <IconButton
-                  onClick={auth.logOut}
-                  aria-label="Déconnexion"
-                  color={theme.palette.mode === 'dark' ? 'warning' : 'inherit'}
-                >
-                  <Tooltip title="Déconnexion">
-                    <LogoutIcon fontSize="medium" />
-                  </Tooltip>
-                </IconButton>
+                {auth.ssoEnabled ? (
+                  <AccountMenu />
+                ) : (
+                  <IconButton
+                    onClick={auth.logOut}
+                    aria-label="Déconnexion"
+                    color={theme.palette.mode === 'dark' ? 'warning' : 'inherit'}
+                  >
+                    <Tooltip title="Déconnexion">
+                      <LogoutIcon fontSize="medium" />
+                    </Tooltip>
+                  </IconButton>
+                )}
               </Box>
             </>
           )}
