@@ -22,6 +22,7 @@ import { useAuth } from '../hooks/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
 import AccountMenu from '../components/AccountMenu';
+import AppMenu from '../components/AppMenu';
 
 interface Props {
   onSidebarOpen: () => void;
@@ -51,10 +52,17 @@ const Header = ({ onSidebarOpen }: Props): JSX.Element => {
             '0 4px 18px 0px rgba(0, 0, 0, 0.12), 0 7px 10px -5px rgba(0, 0, 0, 0.15)',
         }}
       >
-        <Toolbar sx={{ minHeight: 70 }}>
+        {/*
+          Sous 600 px, logo réduit et marges resserrées : avec le bouton
+          Applications, le bouton avatar sortait de l'écran.
+        */}
+        <Toolbar sx={{ minHeight: 70, px: { xs: 1, sm: 3 } }}>
           <Link
             href="/"
-            sx={{ textDecoration: 'none' }}
+            sx={{
+              textDecoration: 'none',
+              '& img': { height: { xs: 24, sm: 50 } },
+            }}
             onClick={(e) => {
               e.preventDefault();
               navigate('/');
@@ -96,6 +104,7 @@ const Header = ({ onSidebarOpen }: Props): JSX.Element => {
                     <SettingsIcon fontSize="medium" />
                   </Tooltip>
                 </IconButton>
+                <AppMenu current="rental-operator" />
                 {auth.ssoEnabled ? (
                   <AccountMenu />
                 ) : (
