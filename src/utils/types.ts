@@ -9,8 +9,8 @@ export interface MachineRentalAddon {
 export interface MachineRental {
   id: string;
   machineRentedId: string;
-  rentalDate: Date | null;
-  returnDate: Date | null;
+  rentalDate: string | null;
+  returnDate: string | null;
   clientFirstName: string;
   clientLastName: string;
   clientEmail: string;
@@ -71,7 +71,7 @@ export interface MachineRented {
   parts: MachineRentedPart[];
   maintenanceHistories: MaintenanceHistory[];
   deposit: number;
-  forbiddenRentalDays: Date[];
+  forbiddenRentalDays: string[];
   operatingHours: number | null;
   fuelLevel: number | null;
   lastMeasurementUpdate: Date | null;
