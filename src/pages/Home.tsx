@@ -144,21 +144,18 @@ const Home = (): JSX.Element => {
         case 'rentalDate':
           if (!a.rentalDate) return 1;
           if (!b.rentalDate) return -1;
-          comparison =
-            new Date(a.rentalDate).getTime() - new Date(b.rentalDate).getTime();
+          comparison = a.rentalDate.localeCompare(b.rentalDate);
           break;
         case 'returnDate':
           if (!a.returnDate) return 1;
           if (!b.returnDate) return -1;
-          comparison =
-            new Date(a.returnDate).getTime() - new Date(b.returnDate).getTime();
+          comparison = a.returnDate.localeCompare(b.returnDate);
           break;
         default:
           // Default to rental date if no key matches
           if (!a.rentalDate) return 1;
           if (!b.rentalDate) return -1;
-          comparison =
-            new Date(a.rentalDate).getTime() - new Date(b.rentalDate).getTime();
+          comparison = a.rentalDate.localeCompare(b.rentalDate);
           break;
       }
 

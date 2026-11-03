@@ -1,3 +1,4 @@
+import { formatRentalDay, rentalDays } from '../utils/rentalDates.util';
 import React from 'react';
 import {
   Document,
@@ -210,7 +211,8 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
 }) => {
   const formatDate = (date: string | Date | null) => {
     if (!date) return 'Non spécifié';
-    const d = new Date(date);
+    if (typeof date === 'string') return formatRentalDay(date);
+    const d = date;
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1)
       .toString()
       .padStart(2, '0')}/${d.getFullYear()}`;
@@ -466,19 +468,9 @@ const TermsDocument: React.FC<TermsDocumentProps> = ({
 
           {/* Detailed price breakdown table */}
           {(() => {
-            const startDate = rental.rentalDate
-              ? new Date(rental.rentalDate)
-              : null;
-            const endDate = rental.returnDate
-              ? new Date(rental.returnDate)
-              : null;
-            const diffDays =
-              startDate && endDate
-                ? Math.round(
-                    (endDate.getTime() - startDate.getTime()) /
-                      (1000 * 60 * 60 * 24),
-                  ) + 1
-                : 0;
+            const diffDays = rental.rentalDate
+              ? rentalDays(rental.rentalDate, rental.returnDate)
+              : 0;
             const machineDailyPrice = machine.price_per_day || 0;
             const addons = rental.addons || [];
             const addonsTotal = addons.reduce((sum, acc) => {
